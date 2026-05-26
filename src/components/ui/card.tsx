@@ -1,12 +1,30 @@
 import { cn } from "@/lib/utils";
 
-type CardProps = React.HTMLAttributes<HTMLDivElement>;
+type CardProps = React.HTMLAttributes<HTMLDivElement> & {
+  variant?: "default" | "raised" | "muted" | "glass";
+  interactive?: boolean;
+};
 
-export function Card({ className, ...props }: CardProps) {
+const variantClasses: Record<NonNullable<CardProps["variant"]>, string> = {
+  default: "border-line bg-copy/[0.06]",
+  raised: "border-line bg-ink-soft shadow-deep",
+  muted: "border-copy/8 bg-copy/[0.03]",
+  glass: "border-line bg-ink-glass backdrop-blur-xl",
+};
+
+export function Card({
+  className,
+  variant = "default",
+  interactive = false,
+  ...props
+}: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-card border border-line bg-copy/7 shadow-2xl shadow-ink/20",
+        "relative rounded-card border",
+        variantClasses[variant],
+        interactive &&
+          "cursor-pointer transition duration-200 ease-[var(--ease-out)] hover:-translate-y-[2px] hover:border-copy/30 hover:bg-copy/[0.09]",
         className,
       )}
       {...props}

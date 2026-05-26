@@ -23,8 +23,24 @@ Do not add a backend, auth, account persistence, analytics, real model calls, or
 - Zustand with `sessionStorage` persistence for funnel/session state
 - Static character data in `src/data/characters.json`
 - Hand-rolled primitives in `src/components/ui`
+- Playwright in `tests/e2e/` for visual screenshot review
 
 Use the existing primitives and route structure before introducing new abstractions. Avoid shadcn-style generic component drops; the visual identity should come from this codebase.
+
+### Primitives (`src/components/ui/`)
+
+- `Surface` — morphing accent backdrop with drift + grain, used for entry-scale pages.
+- `Display` — serif headline with `sm`/`md`/`lg`/`xl` scale and balanced wrapping.
+- `Eyebrow` — small uppercase tracking label, `muted` or `accent`.
+- `Button` — `primary`/`secondary`/`ghost`/`outline` × `sm`/`md`/`lg`. Supports `asChild`.
+- `IconButton` — icon-only round button with accessible `label`.
+- `Chip` — pill-shaped multi-select / filter chip. Supports `selected` state.
+- `ChoiceCard` — rich funnel-choice button with accent dot, label, hint, trailing slot.
+- `Card` — `default`/`raised`/`muted`/`glass` container, with optional `interactive` hover lift.
+- `Avatar` — radial-gradient accent tile/disc with size variants `sm`/`md`/`lg`/`xl`.
+- `Tag` — small uppercase pill, supports per-character accent tinting.
+- `MessageBubble` — chat bubble (`character` accent-tinted, `user` filled, `system` dashed).
+- `Field` — input / textarea (`multiline`) with label + hint + invalid state.
 
 ## Product Direction
 
@@ -61,8 +77,17 @@ If scope needs to be cut, protect the funnel shell and browse path first.
 - `npm run typecheck` runs TypeScript without emitting files.
 - `npm run build` verifies the production build.
 - `npm run format` formats the repo with Prettier.
+- `npm run test:e2e` runs the Playwright screenshot suite (desktop + mobile).
+- `npm run test:e2e:desktop` runs only the desktop project.
 
-Run `npm run lint`, `npm run typecheck`, and `npm run build` before handing off meaningful code changes when practical.
+Run `npm run lint`, `npm run typecheck`, and `npm run build` before handing off meaningful code changes when practical. When making visible UI changes, also run `npm run test:e2e` and review the PNGs under `test-results/screenshots/` before committing.
+
+### Playwright notes
+
+- The suite boots `next start` on port `4321` via `webServer`. It needs a fresh `npm run build` first.
+- Only Chromium is installed (`npx playwright install chromium`). The mobile project uses Chromium-based Pixel emulation, not WebKit.
+- Hover-state tests skip on mobile (no hover affordance there).
+- Screenshots are namespaced by project: `test-results/screenshots/desktop/` and `test-results/screenshots/mobile/`. They are gitignored.
 
 ## State And Data
 

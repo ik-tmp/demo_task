@@ -3,23 +3,45 @@
 @theme {
   --font-sans: var(--font-body);
   --font-serif: var(--font-heading);
+
   --color-ink: #15131a;
   --color-ink-soft: #211d2b;
+  --color-ink-deep: #0e0c14;
+  --color-ink-glass: rgb(15 13 22 / 0.55);
+
   --color-panel: #fff6ee;
   --color-panel-muted: #f5e6db;
-  --color-line: rgb(255 246 238 / 0.18);
+
+  --color-line: rgb(255 246 238 / 0.14);
+  --color-line-strong: rgb(255 246 238 / 0.28);
+
   --color-copy: #fff6ee;
   --color-copy-muted: #cdbeb8;
+  --color-copy-faint: rgb(255 246 238 / 0.55);
+
   --color-coral: #ff7f6e;
   --color-teal: #62d2c6;
   --color-gold: #f5be58;
   --color-orchid: #c99cff;
+  --color-rose: #ffb29f;
+
   --radius-card: 8px;
+  --radius-tile: 14px;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 14px 40px rgb(7 5 12 / 0.32);
+  --shadow-deep: 0 28px 80px rgb(7 5 12 / 0.55);
+  --shadow-glow: 0 0 0 1px rgb(255 246 238 / 0.08), 0 30px 70px rgb(7 5 12 / 0.55);
+
+  --ease-out: cubic-bezier(0.2, 0.65, 0.3, 1);
+  --ease-soft: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 :root {
   color-scheme: dark;
   background: #15131a;
+  --tw-shadow-color: rgb(7 5 12 / 0.4);
 }
 
 * {
@@ -29,25 +51,20 @@
 html {
   min-height: 100%;
   background: #15131a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(
-      circle at 20% 15%,
-      rgb(255 127 110 / 0.16),
-      transparent 34rem
-    ),
-    radial-gradient(
-      circle at 80% 20%,
-      rgb(98 210 198 / 0.13),
-      transparent 30rem
-    ),
-    linear-gradient(135deg, #15131a 0%, #211d2b 52%, #181622 100%);
   color: #fff6ee;
+  background: #15131a;
   font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings:
+    "ss01" on,
+    "cv11" on;
 }
 
 button,
@@ -55,8 +72,61 @@ input,
 textarea,
 select {
   font: inherit;
+  color: inherit;
+}
+
+input,
+textarea,
+select {
+  background: transparent;
 }
 
 ::selection {
   background: rgb(255 127 110 / 0.36);
+}
+
+@keyframes drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-1.2%, 1.6%, 0) scale(1.04);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: radial-gradient(
+    rgb(255 246 238 / 0.08) 1px,
+    transparent 1px
+  );
+  background-size: 3px 3px;
 }
