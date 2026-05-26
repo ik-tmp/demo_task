@@ -27,6 +27,16 @@ Do not add a backend, auth, account persistence, analytics, real model calls, or
 
 Use the existing primitives and route structure before introducing new abstractions. Avoid shadcn-style generic component drops; the visual identity should come from this codebase.
 
+### Composite components (`src/components/`)
+
+- `app-shell.tsx` — sticky top bar with brand mark + nav pill, used by interior routes.
+- `character-card.tsx` — reusable character tile (avatar + name + bio + tag pills + opener). Used in Browse and the "similar in mood" row on character detail.
+- `funnel-entry.tsx` — the `/` entry experience.
+
+### Browse filtering (`src/lib/browse.ts`)
+
+Pure helpers: `applyBrowseFilters(characters, { query, tags, sort, affinityTags? })` returns a filtered+sorted list; `collectTagPool(characters)` returns the sorted tag universe. Sort keys: `popular | new | recommended`. The "Recommended" sort uses `affinityTags` from Match/Create state.
+
 ### Primitives (`src/components/ui/`)
 
 - `Surface` — morphing accent backdrop with drift + grain, used for entry-scale pages.

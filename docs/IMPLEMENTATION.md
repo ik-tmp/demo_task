@@ -27,8 +27,10 @@ This document tracks implementation progress against `docs/PLAN.md`. Keep it fac
   - Entry page (`/`) rebuilt: hero question, three `ChoiceCard`s, morphing `Surface` accent tied to hover/focus, side preview panel that crossfades between Browse / Match / Create states using Framer Motion.
   - Still missing: shared-layout transitions into the destination routes, back preservation, resume-on-return ("pick up where you left off"), deeper branch step wiring.
 - `[~]` Browse path
-  - Discovery grid, character cards, character detail pages, and chat handoff exist as scaffolded UI.
-  - Search, filters, sort behavior, skeletons, empty states, related characters, and image-fallback states are not implemented yet.
+  - Browse page rebuilt with `Surface`, `Display`, `Eyebrow`, instant search, multi-select tag filter chips, and Popular/New sort. Empty state with clear-filters action. Filter/sort logic lives in `src/lib/browse.ts`.
+  - Character detail rebuilt with accent `Surface`, xl `Avatar`, sample dialogue rendered through `MessageBubble`, "similar in mood" tag-overlap related row reusing `CharacterCard`, back-to-browse link.
+  - Reusable `CharacterCard` extracted in `src/components/character-card.tsx`.
+  - Still pending: filter sheet/sort animation, skeleton loading, "Recommended for you" sort surfaced when arriving from Match/Create, image-fallback hardening.
 - `[ ]` Match flow
   - First question surface exists only as static scaffold.
   - Needs question state, scoring, narrated interstitial, reveal, rationale, rerun, and browse fallback.
@@ -60,7 +62,8 @@ This document tracks implementation progress against `docs/PLAN.md`. Keep it fac
   - `01-entry-idle` — entry page resting state
   - `02..04-entry-hover-{browse,match,create}` — desktop hover/preview morphs
   - `05-entry-focus-browse` — keyboard-focus morph
-  - `10-browse`, `11-character-iris`, `12-match`, `13-create`, `14-chat-iris` — downstream routes
+  - `10-browse`, `10b-browse-filtered`, `10c-browse-empty` — discovery surface in three states
+  - `11-character-iris`, `12-match`, `13-create`, `14-chat-iris` — remaining downstream routes
 - Run: `npm run test:e2e` (boots a production server on 4321) or `npm run test:e2e:desktop`. Outputs land in `test-results/screenshots/<project>/` and are gitignored.
 
 ## Current Version Pins
@@ -76,4 +79,4 @@ This document tracks implementation progress against `docs/PLAN.md`. Keep it fac
 
 ## Next Build Step
 
-Push the funnel into Browse/Match/Create destinations with the same visual language as the entry redesign — start by replacing the Browse grid styling with the new `Card`/`Avatar`/`Tag` primitives, then move on to the Match question flow.
+Build the Match flow on top of the funnel shell: question state machine for 3–4 questions, deterministic scoring in `src/lib/match.ts` against the existing tag pool, a narrated interstitial that types out the user's selections, and a reveal that drops into the existing character detail or chat surface. Add "Show me someone else" and "Let me see all of them" CTAs so a bad match degrades to Browse.

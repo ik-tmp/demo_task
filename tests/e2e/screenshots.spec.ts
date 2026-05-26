@@ -75,6 +75,18 @@ test.describe("downstream routes", () => {
     await snapshot(page, info, "10-browse");
   });
 
+  test("browse with tag filter", async ({ page }, info) => {
+    await page.goto("/browse");
+    await page.getByRole("button", { name: /^cozy$/i }).click();
+    await snapshot(page, info, "10b-browse-filtered");
+  });
+
+  test("browse empty state", async ({ page }, info) => {
+    await page.goto("/browse");
+    await page.getByPlaceholder(/search names/i).fill("zzznotreal");
+    await snapshot(page, info, "10c-browse-empty");
+  });
+
   test("character detail (iris)", async ({ page }, info) => {
     await page.goto("/c/iris");
     await snapshot(page, info, "11-character-iris");

@@ -1,73 +1,164 @@
-import Link from "next/link";
+"use client";
+
+import { useMemo, useState } from "react";
 import type { Route } from "next";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { Avatar } from "@/components/ui/avatar";
+import { CharacterCard } from "@/components/character-card";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
+import { Display } from "@/components/ui/display";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import { IconButton } from "@/components/ui/icon-button";
+import { Surface } from "@/components/ui/surface";
 import { characters } from "@/lib/characters";
+import {
+  applyBrowseFilters,
+  collectTagPool,
+  sortOptions,
+  type SortKey,
+} from "@/lib/browse";
+
+const tagPool = collectTagPool(characters);
 
 export default function BrowsePage() {
+  const [query, setQuery] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [sort, setSort] = useState<SortKey>("popular");
+
+  const results = useMemo(
+    () => applyBrowseFilters(characters, { query, tags, sort }),
+    [query, tags, sort],
+  );
+
+  function toggleTag(tag: string) {
+    setTags((current) =>
+      current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag],
+    );
+  }
+
+  function clearFilters() {
+    setQuery("");
+    setTags([]);
+  }
+
+  const hasFilters = query.length > 0 || tags.length > 0;
+
   return (
     <AppShell activePath="/browse">
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 py-8 sm:px-8">
-        <div className="flex flex-col gap-5 rounded-card border border-line bg-copy/6 p-4 backdrop-blur md:flex-row md:items-center md:justify-between">
-          <label className="flex min-h-12 flex-1 items-center gap-3 rounded-card border border-line bg-ink/35 px-4 text-copy-muted">
-            <Search size={18} aria-hidden />
-            <span className="sr-only">Search characters</span>
-            <input
-              className="w-full bg-transparent text-copy outline-none placeholder:text-copy-muted/70"
-              placeholder="Search names, tags, moods"
-            />
-          </label>
-          <div className="flex items-center gap-3">
-            <Button variant="secondary">
-              <SlidersHorizontal size={18} aria-hidden />
-              Filters
-            </Button>
-            <select className="min-h-12 rounded-card border border-line bg-ink/55 px-4 text-copy outline-none">
-              <option>Popular today</option>
-              <option>New</option>
-              <option>Recommended for you</option>
-            </select>
-          </div>
-        </div>
+      <Surface accent="#62d2c6" intensity="calm">
+        <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-5 pt-10 pb-16 sm:px-8 sm:pt-12">
+          <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <Eyebrow tone="muted">discovery</Eyebrow>
+              <Display size="md" className="mt-2">
+                Who&apos;s around today.
+              </Display>
+            </div>
+            <p className="text-[13px] tracking-[0.14em] uppercase text-copy-muted">
+              {results.length}{" "}
+              {results.length === 1 ? "character" : "characters"}
+              {hasFilters ? " match" : " in residence"}
+            </p>
+          </header>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          {characters.map((character) => (
-            <Link
-              key={character.id}
-              href={`/c/${character.id}` as Route}
-              className="group focus:outline-none"
-            >
-              <Card className="flex h-full flex-col gap-5 p-5 transition duration-200 group-hover:-translate-y-1 group-hover:border-copy/30 group-focus-visible:ring-2 group-focus-visible:ring-coral">
-                <div className="flex items-start gap-4">
-                  <Avatar name={character.name} accent={character.accent} />
-                  <div className="min-w-0">
-                    <h2 className="font-serif text-2xl leading-tight text-copy">
-                      {character.name}
-                    </h2>
-                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-copy-muted">
-                      {character.bio}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {character.tags.slice(0, 2).map((tag) => (
-                    <Chip key={tag} tone="quiet">
-                      {tag}
-                    </Chip>
-                  ))}
-                </div>
-                <p className="mt-auto border-t border-line pt-4 text-sm italic leading-6 text-copy-muted md:opacity-0 md:transition md:group-hover:opacity-100">
-                  {character.opener}
-                </p>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </section>
+          <section className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <label className="group flex min-h-12 flex-1 items-center gap-3 rounded-tile border border-line bg-ink/45 px-4 transition focus-within:border-copy/55 focus-within:bg-ink/65">
+                <Search
+                  size={17}
+                  aria-hidden
+                  className="shrink-0 text-copy-muted"
+                />
+                <span className="sr-only">Search characters</span>
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="w-full bg-transparent text-[15px] text-copy outline-none placeholder:text-copy-muted/70"
+                  placeholder="Search names, moods, things they're good at"
+                />
+                {query ? (
+                  <IconButton
+                    label="Clear search"
+                    size="sm"
+                    onClick={() => setQuery("")}
+                  >
+                    <X size={14} />
+                  </IconButton>
+                ) : null}
+              </label>
+
+              <div className="flex items-center gap-1 rounded-pill border border-line bg-copy/[0.05] p-1">
+                {sortOptions.map((opt) => (
+                  <Chip
+                    key={opt.key}
+                    size="sm"
+                    selected={sort === opt.key}
+                    onClick={() => setSort(opt.key)}
+                    className="border-transparent"
+                  >
+                    {opt.label}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Eyebrow className="mr-2 hidden sm:inline">tags</Eyebrow>
+              {tagPool.map((tag) => (
+                <Chip
+                  key={tag}
+                  size="sm"
+                  tone="quiet"
+                  selected={tags.includes(tag)}
+                  onClick={() => toggleTag(tag)}
+                >
+                  {tag}
+                </Chip>
+              ))}
+              {hasFilters ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="ml-auto"
+                >
+                  <X size={14} aria-hidden />
+                  Clear all
+                </Button>
+              ) : null}
+            </div>
+          </section>
+
+          {results.length === 0 ? (
+            <EmptyState onClear={clearFilters} />
+          ) : (
+            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {results.map((character) => (
+                <CharacterCard
+                  key={character.id}
+                  character={character}
+                  href={`/c/${character.id}` as Route}
+                />
+              ))}
+            </section>
+          )}
+        </main>
+      </Surface>
     </AppShell>
+  );
+}
+
+function EmptyState({ onClear }: { onClear: () => void }) {
+  return (
+    <div className="flex flex-col items-center gap-4 rounded-tile border border-dashed border-copy/15 bg-copy/[0.03] px-6 py-14 text-center">
+      <Eyebrow tone="muted">empty room</Eyebrow>
+      <p className="max-w-md font-serif text-2xl leading-snug text-copy">
+        Nothing matches all of that. Try fewer filters?
+      </p>
+      <Button variant="secondary" onClick={onClear}>
+        Clear filters
+      </Button>
+    </div>
   );
 }
