@@ -1,370 +1,864 @@
-# AI Companion — Entry Experience
+# AI Companion Entry Experience - Product And Design Plan
 
-A plan for the path from app-open to first conversation. Frontend-only v1; every "AI" behavior is a deterministic function of user input so the flow can be judged on product design, not model quality.
+This plan reorients the project around a conversational web funnel for an AI companion product. The goal is still the original assignment: build the path a new user takes from app open to first conversation with a character. The direction changes from a mostly browse/match/create app surface into a richer, more intimate first-meeting experience.
 
----
+The product should feel like someone is slowly becoming real beside the user. The user is not filling out a form. They are having a guided conversation, and every answer changes the companion presence: what the app infers, what it recommends, how the portrait looks, and how the first chat begins.
 
-## 0. Context
-
-Take-home assignment for [get-honey.today](https://get-honey.today/). The product is an AI companion app, so the assignment surface (entry → first conversation) is directly relevant to their actual product. I've looked at the live site to understand the category and the implicit bar for polish.
-
-Deliberate non-goal: **do not overfit to get-honey's current implementation.** This is judged as a product engineer's submission, not as a redesign of their site. Where their existing flow makes a specific choice (e.g. a particular onboarding step, a particular visual treatment), I'm free to disagree if I can justify a better one. The funnel-as-conversation premise in §1 is one of those disagreements — it's a different shape than most companion products use, and the value of the submission is in arguing for it, not in mimicking what already exists.
-
-What I am taking from the category: warmth and intimacy over corporate polish; mobile-first; chat is the product; characters need personality, not feature lists.
+This document is intentionally product- and design-focused. Existing code can be reused where it helps, but the new direction should not be constrained by the current UI or route structure. If starting from scratch produces a stronger product, start from scratch.
 
 ---
 
-## 1. The bet
+## 1. Assignment Frame
 
-The entry experience itself is conversational. A chat-styled funnel asks framed questions, the user answers with predefined chips, and the surrounding UI morphs in response — background hue, accent color, side panel, preview card. The funnel is the headline interaction.
+The assignment asks for an end-to-end entry experience for an AI companion product. A new user may arrive with three different needs:
 
-Why this beats a normal onboarding form:
+- They want to browse what already exists.
+- They want to be matched quickly without making many decisions.
+- They want to create something specific to them.
 
-- It demos the core product (chat with predefined-feeling exchanges) before the user has committed to a character.
-- Every chip is a small act of authorship — by the time the user lands in their first conversation, they've already had four or five micro-interactions that felt like dialogue.
-- It collapses the three intents (browse / match / create) into one interaction language, so the user only has to learn the funnel once.
-- It gives the morphing UI somewhere to live — the responsiveness of the surface to the user's selections is what makes the product feel alive vs feeling like a directory.
+The deliverable should feel like a polished product, not a wireframe. It needs considered copy, transitions, empty and error states, and a clear answer for how AI appears in the experience: suggestions, ranking, matching, generated content, and personalization.
 
-The risk: a user who knows exactly what they want resents being funneled. Mitigation: a persistent "skip to browse" affordance from the opening question onward, and the opening question is always one chip away from each branch — no multi-step lock-in.
-
----
-
-## 2. Information architecture
-
-```
-/                    Funnel entry — opening question
-/browse              Discovery grid (search, filter, sort)
-/c/[id]              Character detail
-/match               Match flow (3–4 questions → match reveal)
-/create              Creator flow (archetype → traits → voice → name/avatar → optional freeform)
-/chat/[id]           Conversation (the terminus for all three branches)
-```
-
-Funnel state (current step, prior selections, branch) lives in Zustand and is mirrored to `sessionStorage` so refresh restores position. Back button preserves selections.
-
-Branch transitions are not hard route changes — they're shared-layout transitions within a single shell, so the morphing background carries continuity from question to question and from funnel into the destination surface.
+Our answer is a web funnel, but not a classical funnel. There are no obvious step counters, no corporate onboarding cards, and no long form. The funnel is a chat. The user answers in small conversational turns. The interface responds visually. The path branches based on intent. The companion portrait changes alongside the conversation until the user arrives in the first chat with a character who already feels selected, shaped, or discovered for them.
 
 ---
 
-## 3. The opening question
+## 2. Core Bet
 
-> **"Hey. Who do you want to meet?"**
->
-> - Just looking around → `/browse`
-> - Match me with someone → `/match`
-> - I have someone in mind → `/create`
->
-> (Small link, bottom of viewport) _Skip and just show me everyone_
+The entry experience should be a first conversation.
 
-Design notes:
+Most AI companion products start with a marketplace: rows of attractive avatars, search filters, likes, premium labels, and "chat now" buttons. That solves inventory discovery, but it does not create intimacy. It makes companions feel interchangeable.
 
-- Greeting is lowercase-warm, not corporate. No logo lockup above it; the question is the hero.
-- The three chips are visually equal weight. No "recommended" pip — we don't yet know enough about the user to recommend.
-- The "Skip" link exists for repeat visitors, power users, and anyone who hates being funneled. Click rate on this link is something I'd want to track in a real product to know whether the funnel is paying for itself.
-- Background is a soft gradient that subtly shifts when the user hovers each chip — a preview of the morphing pattern.
+This product should begin with presence instead:
 
----
+- A large realistic portrait is visible from the first screen.
+- The chat asks one emotionally legible question at a time.
+- User answers change the portrait, tone, recommendations, and first-chat context.
+- Discovery, matching, and creation all happen through the same interaction language.
+- The final chat begins with context the user created during the funnel.
 
-## 4. Branch A — Browse (discovery)
-
-The largest surface and the path most casual users will take.
-
-**Discovery grid**
-
-- Card-based, 3 across desktop / 1 across mobile.
-- Each card: avatar, name, one-line bio, two tag pills, opening-line snippet that fades in on hover (desktop) / always shown (mobile).
-- Sticky top bar: search input, filter button, sort selector.
-
-**Filters**
-
-- Tags (multi-select chips): mood, role, format. Example tags: cozy, witty, mentor, roleplay, listener, mysterious, sharp.
-- Filter sheet slides up from the bottom on mobile; left rail on desktop.
-- Applied filters appear as removable chips above the grid.
-
-**Sort**
-
-- Popular today (default for cold start)
-- New
-- Recommended for you (only shown if user came through Match or Create — keyed to their selections)
-
-**Search**
-
-- Instant filter, no submit. Matches name, tags, and bio keywords.
-- Empty input shows the grid normally. Typing collapses the grid into matches.
-
-**Character detail (`/c/[id]`)**
-
-- Hero: large avatar, name (editorial serif), one-paragraph bio, tag pills.
-- Sample messages: three example exchanges showing the character's voice — these are the "test drive" before committing.
-- Related characters: three cards by tag overlap.
-- Primary CTA: "Start chatting" — large, anchored bottom on mobile, inline below sample messages on desktop.
-
-**States**
-
-- Empty grid (no filter matches): "Nothing matches all of that. Try fewer filters?" with one-tap "clear filters" button.
-- Image load failure on a card: avatar falls back to a tinted initials disc, not a broken-image icon.
-- Slow load: skeleton cards with the same spacing as real cards so layout doesn't shift.
+The product promise is not "choose from many characters." The promise is "meet someone who feels like they were waiting for this conversation."
 
 ---
 
-## 5. Branch B — Match (quick match)
+## 3. Design Direction
 
-For the user who doesn't want to make a lot of decisions.
+The experience should feel intimate, cinematic, and personal. It should avoid the visual grammar of a marketplace, quiz, productivity dashboard, or dating app swipe deck.
 
-**Questions (3–4)**
+Use the generated concepts as direction references:
 
-Each question is one screen in the funnel shell. Chips, morphing background tied to selection.
+- `design/concept-01-presence-split.png` - desktop split screen with chat, context, and living portrait.
+- `design/concept-02-mobile-portrait-funnel.png` - mobile portrait-first funnel.
+- `design/concept-03-conversational-creator.png` - companion builder through chat.
+- `design/concept-04-chat-with-presence.png` - first chat with persistent portrait and carried-over context.
 
-1. **"What kind of company are you after?"** — Cozy / Playful / Sharp / Mysterious / Anything goes
-2. **"And what should they be doing?"** — Listening / Bantering / Telling stories / Helping me think / Surprise me
-3. **"Tone-wise?"** — Warm / Sly / Soft / Bold
-4. _(Optional 4th if first three were ambiguous)_ — A tiebreaker question synthesized from collisions in tag space.
+### Product Feeling
 
-Each question accepts "Anything" / "Skip" as a chip, so the user can race through.
+- Quiet instead of loud.
+- Personal instead of promotional.
+- Sensual in atmosphere, but not explicit.
+- Warm and direct in copy.
+- Premium through detail, not through clutter.
+- Emotionally adaptive, even if the demo logic is deterministic.
 
-**The matching moment**
+### Visual Principles
 
-This is the moment where the product has to feel intelligent even though it's a pure function. A naive implementation flashes a spinner and reveals — that's a wasted opportunity.
+- The portrait is the main product surface.
+- Chat is the control layer.
+- User choices are reflected through copy, portrait state, and first-chat context rather than a separate settings-like panel.
+- Progress is implied by what the app has learned, not by numbered steps.
+- Motion should feel like attention: lighting shifts, portrait state changes, panels breathe, messages arrive with natural timing.
+- The UI should never feel like a traditional lead-capture funnel.
 
-Instead: a narrated interstitial that types itself out, referencing the user's actual selections:
+### Companion Imagery
 
-> _Looking for someone who's cozy and a great storyteller…_
-> _…and warm without being soft._
-> _I think you'd like Iris._
+Companions should use large realistic generated images. The image should not be a tiny avatar in a card; it should be a persistent presence.
 
-The reveal lands with the character's avatar scaling in, name in serif, and a "Here's why" expandable panel showing the tag overlap that drove the pick.
+Each companion needs multiple visual states:
 
-**Reveal CTAs**
+- neutral first look
+- warmer after trust-building choices
+- curious after playful/open choices
+- closer after the user commits to a direction
+- final chat state
 
-- "Start chatting" (primary)
-- "Show me someone else" (re-runs the matcher excluding the prior pick)
-- "Let me see all of them" (escape to `/browse` with the user's tags pre-applied as filters)
+States can change through expression, distance from camera, lighting, posture, room mood, wardrobe tone, or crop. The demo does not need true image generation at runtime. Pre-generated state images are enough if the product idea is clear.
 
-This third option is critical. Without it, a bad match is a dead-end. With it, Match degrades gracefully into Browse — same answers, different surface.
-
-**Scoring function (faked)**
-
-```
-score(character) = sum(weight[tag] for tag in character.tags ∩ user.selections)
-```
-
-Light randomization to break ties. Excludes characters from prior reveal in the same session.
-
-**States**
-
-- All "Anything" selections: skip the narrated interstitial, go straight to a popular character with a different "you didn't tell me much — here's someone everyone likes" rationale. This is the empty-input case for the matcher.
-- Re-run with no remaining candidates: "I'm out of ideas. Want to look through everyone?" → Browse.
+All companion imagery should be adult, fully clothed, non-explicit, and polished. The product can feel intimate without relying on explicit presentation.
 
 ---
 
-## 6. Branch C — Create
+## 4. Experience Model
 
-For the user with a specific vision. Hardest to scope.
+The whole entry experience is one conversational shell with a changing visual companion. The shell supports three paths, but the user should not feel they are choosing a product mode. They should feel the conversation is adapting.
 
-**Approach: progressive disclosure as conversation**
+### Shared Shell
 
-Reuse the funnel shell so the interaction language is consistent. Each step is a chip-based question with a live preview side panel.
+Every screen has the same core ingredients:
 
-1. **Archetype** (single-select): Companion / Mentor / Sidekick / Antagonist / Muse / Stranger
-2. **Traits** (multi-select, 2–4): Witty / Warm / Blunt / Dreamy / Sarcastic / Earnest / Sharp / Soft (8 chips, pick a few)
-3. **Voice** (single-select): three sample dialogue snippets showing different voices for the archetype+traits combo so far. The user picks the one that sounds right. This is the most "AI shows up in the creator" moment.
-4. **Name & avatar**: name is a freeform input; avatar is a curated grid of 6 options keyed to the archetype + first trait. "Generate another set" reshuffles within the keying.
-5. **Anything else?** (optional, gated): single freeform textarea. "Backstory, quirks, things they care about — or skip." This serves the user who has something specific they need to say. Cap at ~280 characters to keep it focused.
+- Large companion portrait or portrait-in-progress.
+- Chat history with short, natural messages.
+- Reply chips for low-friction answers.
+- Optional free text when specificity matters.
+- A subtle escape hatch to see everyone or skip ahead.
+- A primary next action only when the moment needs one.
 
-**Live preview panel**
+For now, avoid a dedicated memory or "what I know" panel. The prototype should stay focused on the main assignment requirements: discovery, quick matching, specific creation, and arrival in the first conversation. Learned signals can still affect the chat copy, portrait state, and recommendations, but they do not need their own visible surface.
 
-Right side on desktop, sticky bottom on mobile. As selections accrue, the preview assembles:
+### Dynamic Pathing
 
-- Avatar appears at step 4.
-- One-line bio is templated from archetype + traits ("a warm, witty companion who listens more than talks").
-- Sample opener appears at step 3, swapping to match the chosen voice.
+The path changes based on the user's answers.
 
-The user sees their character becoming real in real time. That's the emotional payoff of Create.
+Example opening:
 
-**Finish**
+> Hey. What kind of company would feel good right now?
 
-"Meet [name]" → transition into chat. The character's first message is a templated opener keyed to their archetype + voice, with [name]-personalization. For the v1 demo, generated-feeling content is represented by deterministic templates so the product flow can be evaluated without model calls — the seams are sized for a real model to slot in later.
+Reply options:
 
-**States**
+- Show me who's here.
+- Choose someone for me.
+- Stay with you.
+- I'm waiting for someone else.
 
-- Back from any step: prior selections preserved.
-- Refresh: full state restored from sessionStorage.
-- User abandons mid-create: next visit, the funnel offers "Pick up where you left off?" as a fourth chip on the opening question.
-- Name collision with seed character: allowed; we're not policing.
+Those choices map roughly to Browse, Match, staying with the default companion, and creating someone specific, but the user never sees labels that feel like navigation. The conversation can also reroute:
 
----
+- A browsing user who keeps choosing "surprise me" can be moved into Match.
+- A matching user who rejects multiple reveals can be moved into Browse with filters pre-applied.
+- A user who says "I'm waiting for someone else" enters a guided creation path through follow-up questions.
+- A specific freeform description can jump deeper into that path.
 
-## 7. Chat (the terminus)
-
-A thin shell — enough to feel like an ending, not a destination. Real chat product would dwarf this; we deliberately don't build it.
-
-- Header: character avatar (small), name, "..." menu (regenerate response, end chat, share — non-functional but designed).
-- Message list with the character's first message already present.
-- Typing indicator with a slight delay before each character reply (canned, picked by light keyword matching on user input).
-- Input box: textarea, send button (Enter to send, Shift+Enter for newline).
-- Three suggested-reply chips below the input — these continue the chip metaphor from the funnel into the chat itself.
-
-**Arrival-aware opening (the first 30 seconds)**
-
-The chat is thin by design, but the first ~30 seconds should feel alive. Three branches feed off a single seam — how the user arrived:
-
-- **From Match**: the opener references the rationale tags. _"Heard you were after someone cozy. I can do cozy."_
-- **From Create**: the opener pulls from the chosen archetype + first trait + name. _"So I'm [name]. You picked sharp and earnest — let's see what happens."_
-- **From Browse**: a canned per-character opener (already in seed data).
-
-Suggested replies branch the same way — Match-arrivals get chips that continue the rationale thread; Create-arrivals get chips that test the traits they chose; Browse-arrivals get neutral starters.
-
-One more designed turn after that: a light keyword matcher on the user's first reply maps to 2–3 branches per character, producing a believable second character message. After that exchange, suggested replies become generic and replies pool-sample. The conversation degrades visibly rather than breaks — the user feels the seam, but only after the first 30 seconds have already done their job.
-
-**States**
-
-- Send failure (simulated 1-in-N): inline retry on the failed message, no toast.
-- Long messages: auto-grow input up to 6 lines, scroll within.
-- Empty input: send button disabled but visible.
+The funnel should feel intelligent because it asks fewer questions when it already has enough signal, and asks better follow-ups when it does not.
 
 ---
 
-## 8. Where "AI" shows up (and how it's faked)
+## 5. App Open
 
-The assignment specifically asks about this. The design assumes a real model lives at each of these seams; the v1 stubs are localized so swapping them out later is a small change.
+The first screen should not look like a landing page. It should look like the product has already started.
 
-| Surface               | What it looks like                                | What it actually is in v1                                                                                                                |
-| --------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Discovery ranking     | "Recommended for you" sort                        | Tag-overlap score with funnel selections; falls back to popularity                                                                       |
-| Match scoring         | Picks one character from chip answers             | Weighted tag intersection + light randomization                                                                                          |
-| Match rationale       | Narrated "why this one"                           | Template populated with the tags that overlapped                                                                                         |
-| Creator voice preview | Three sample dialogues per archetype/traits combo | Lookup table                                                                                                                             |
-| Creator bio assembly  | One-line bio updates as chips are picked          | String template from selection slots                                                                                                     |
-| Chat opener           | Character's first message in chat                 | Branches on arrival: Match → references rationale tags; Create → templated from archetype + traits + name; Browse → canned per character |
-| Suggested replies     | Three chips under the chat input                  | Arrival-aware on first turn (Match/Create/Browse-keyed); static-set + keyword swap after                                                 |
-| Chat continuity       | Character responds to what I said                 | First-reply keyword match → 2–3 branches per character; subsequent replies pool-sample                                                   |
+### First Impression
 
-Each is a pure function of user input. Determinism makes the demo reliable and makes the architecture honest about where the real model would plug in.
+Desktop:
 
----
+- Split view.
+- Left: chat surface.
+- Right: large portrait area.
+- The portrait can start as a default companion who is ready to talk.
+- The interface makes it clear the user can either continue with this companion, ask to be matched, browse, or say they are waiting for someone else.
 
-## 9. Design system
+Mobile:
 
-- **Type**: editorial serif for character names and display headings (gives characters gravitas); humanist sans for UI and body. No system font.
-- **Color**: dark base, never pure black. One accent per character (stored in their data). The funnel's morphing background pulls from the accent of the most recent chip-driven selection.
-- **Spacing**: generous around chips and chat bubbles; tighter in discovery so cards breathe but the grid feels populated.
-- **Components**: hand-rolled primitives (Button, Chip, Card, Field, Avatar, MessageBubble, Step). No shadcn defaults — the product needs visual identity, not the generic component-library look.
-- **Iconography**: minimal. Skip icons that don't carry weight. One icon set throughout.
-- **Motion**: shared-layout transitions on the funnel; ease-out on entries, no bouncy springs.
+- Portrait first.
+- Chat panel anchored to the bottom.
+- The user immediately sees a face and a question.
+- The chat panel can expand as the conversation deepens.
 
----
+### Opening Copy
 
-## 10. Copy principles
+Options:
 
-- Lowercase warmth, never corporate. "Hey." beats "Welcome to AI Companion."
-- No verb-noun button labels for emotional moments. "Start chatting" not "Submit". "Show me someone else" not "Try again".
-- Empty and error states use the same voice as the rest of the product, not a debug voice.
-- The product never refers to itself in the third person. There is no brand; there is just the conversation.
-- Numbers and progress indicators are avoided in the funnel (no "Step 2 of 4") — they make a conversation feel like a form.
+> Hey. What kind of company would feel good right now?
 
-A few sample strings I'd want to land:
+> I can stay, or I can help you find who you were hoping for.
 
-- Funnel open: _"Hey. Who do you want to meet?"_
-- Match narration: _"Looking for someone who's [tag] and [tag]…"_
-- Match reveal: _"I think you'd like [name]."_
-- Empty discovery: _"Nothing matches all of that. Try fewer filters?"_
-- Chat error: _"That didn't go through."_ (with inline retry)
-- Create handoff: _"Meet [name]."_
+> Tell me what you want this to feel like.
+
+The copy should avoid "Welcome", "Get started", "Submit", "Onboarding", and "Step 1". It should sound like the first message in a conversation.
+
+### Immediate User Control
+
+Even though the funnel is the main idea, users need exits:
+
+- "show everyone" as a quiet text option
+- "skip" in the corner or footer
+- back behavior that preserves prior answers
+- free text for users who dislike chips
+
+The escape hatches are important because intimacy becomes pressure if the user feels trapped.
 
 ---
 
-## 11. Tech stack
+## 6. Path A - Discover Existing Companions
 
-- **Next.js (App Router) + TypeScript** — file-based routing fits the IA above; App Router's layouts cleanly support the shared funnel shell.
-- **Tailwind** with a custom token layer — speed without giving up the bespoke look. Component classes via `clsx`-style composition; no `@apply` soup.
-- **Framer Motion** — shared-layout transitions and gesture support for the mobile filter sheet.
-- **Zustand** — funnel/selection state, persisted to `sessionStorage` via the middleware.
-- **Static JSON** in `/data/characters.json` — ~14 hand-written characters with full metadata. No backend. No fetch waterfalls.
-- **No auth, no real persistence** beyond a session.
+Discovery should still exist because some users want to browse. The design challenge is to keep browsing from becoming a marketplace grid too early.
 
-The whole thing should boot in <100ms on a refresh; the morphing UI demands no perceptible jank between steps.
+### Discovery Through Conversation
 
----
+If the user chooses "show me who's here", the chat asks one lightweight framing question before opening the full inventory:
 
-## 12. Surface allocation (the trade-off)
+> Want a quick mood, or do you want to look through everyone?
 
-Polished depth across surfaces, in order of investment:
+Reply options:
 
-1. **Funnel shell + morphing UI** — the headline interaction. If this feels good, the demo lands. If it feels off, nothing else saves it.
-2. **Match** — the most opinionated surface and the one that best demonstrates "AI showing up". Narrated interstitial, rationale, graceful degradation to Browse.
-3. **Browse** — broad but shallow polish. Grid, filters, search, character page, chat handoff. Don't over-engineer filter combinations.
-4. **Create** — full end-to-end but with deliberately capped depth (one archetype list, one trait list, one freeform field). The progressive disclosure pattern matters more than the breadth of options.
-5. **Chat** — intentionally thin. It's the terminus, not the product.
+- calm
+- playful
+- intense
+- strange
+- show everyone
 
-**Justification I'll write in the submission:**
+If the user picks a mood, the portrait area becomes a curated stage: 3-5 large companion previews, one primary and a few alternates. The user can move between them with simple controls and see the portrait, name, one-line premise, and sample first message.
 
-A real product would A/B Browse vs Match as the default and likely find Match converts better for newcomers and Browse for returners. Match is therefore the surface where polished AI-feel pays back the most per hour of work. Browse is wide but most of its problems (real search ranking, infinite scroll, recommendations) are out of reach without a real model and a real corpus, so going deep there in v1 would be vanity. Create is a long-tail surface — most users will never finish it — but its existence and quality signal whether the product respects users who arrive with specific intent. Shipping it end-to-end at modest depth is the right shape.
+The full grid is available, but it is secondary. The product should try to make the first recommendation set feel personal before asking the user to scan inventory.
 
----
+### Browse Surface
 
-## 13. States, the comprehensive list
+When the user opens the full browse view, it should be richer than the old card grid:
 
-| Surface        | Empty                                                 | Loading                                       | Error                                                                 | Edge                                        |
-| -------------- | ----------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------- |
-| Funnel         | n/a                                                   | step transitions animate, never spin          | n/a                                                                   | refresh restores; back preserves selections |
-| Discovery      | "no matches" with clear-filters CTA                   | skeleton cards                                | image fallback to tinted initials                                     | very long bios truncate with fade           |
-| Character page | n/a                                                   | hero skeleton                                 | character not found → soft 404 with "back to browse"                  | very long name wraps to two lines           |
-| Match          | all "Anything" → popular pick with adjusted rationale | narrated interstitial (not a spinner)         | no candidates left → "out of ideas" escape to Browse                  | re-runs preserve prior tags                 |
-| Create         | preview empty until first selection                   | step transitions; voice preview swap animates | name collision allowed; profanity not policed in v1 (note in writeup) | abandon → resume on next visit              |
-| Chat           | "Say hi" placeholder in input                         | typing indicator (delay then bubble)          | send failure → inline retry on bubble                                 | very long replies scroll within bubble      |
+- Large portrait tiles, not tiny cards.
+- One highlighted companion at a time on desktop.
+- Search and filters presented as conversational refinements.
+- "show me softer", "more playful", "less intense", "someone older", "someone who listens" style refinements.
+- Traditional search remains available for direct users.
 
----
+### Filters
 
-## 14. Mobile
+Filters should map to emotional and interaction qualities:
 
-The funnel is mobile-first. AI companion traffic skews mobile heavily — desktop is the afterthought, not the inverse.
+- vibe: calm, playful, sharp, dreamy, mysterious, grounded
+- role: companion, muse, mentor, confidant, challenger, storyteller
+- energy: quiet, flirty, witty, intense, gentle, chaotic
+- pace: slow, immediate, teasing, reflective
+- format: text-first, image-rich, voice-ready, short replies, long replies
+- boundaries: light, romantic, supportive, roleplay, practical
 
-- Funnel chips: full-width, comfortable tap targets, stacked vertically.
-- Morphing background: same effect, lower-frequency animation budget.
-- Discovery: single column, bottom-anchored search bar, filter sheet slides up.
-- Character page: hero scrolls under a sticky "Start chatting" button.
-- Creator preview: collapses to a peek at the bottom; tap to expand.
-- Chat: standard mobile chat layout, suggested replies above keyboard.
+The product should not overload the user with all filters at once. A conversational refinement can set filters implicitly.
 
----
+### Character Preview
 
-## 15. Build order
+Selecting an existing companion opens a preview that still sits inside the chat shell:
 
-1. Design tokens, font loading, primitives (Button, Chip, Card, Field, Avatar). Storybook-style demo page to spot-check.
-2. Character seed data (~14 characters, full metadata, opening lines, sample dialogues, accents).
-3. Funnel shell: opening question, chip selection, morphing background, step transition. Get the headline interaction working end-to-end with one branch wired (Browse, easiest).
-4. Discovery grid + filters + search + sort + character page + chat shell. End-to-end Browse path complete.
-5. Match flow: questions, scoring, narrated interstitial, reveal, rationale, re-run, fallback to Browse.
-6. Create flow: archetype, traits, voice, name/avatar, optional freeform, live preview, handoff to chat.
-7. States pass: every empty, loading, and error state listed in §13.
-8. Copy pass: every string in the product. No "Submit" anywhere.
-9. Mobile pass: full walk-through on a real phone, fix what jars.
-10. Motion pass: tighten shared-layout transitions and kill anything that distracts.
-11. Demo polish: refresh restore, back preservation, abandon-resume.
+- Large portrait/video-still.
+- Name in editorial type.
+- Short premise.
+- "What they notice" or "What they are good at" bullets.
+- Three sample first messages.
+- A "why this one" note if the user had prior answers.
+- CTA: "say hi to [name]"
 
-If time pressure forces a cut, the order also doubles as the cut order: drop step 11, then 6 down to skeleton, then 5 down to skeleton — never cut from the funnel shell or Browse, because without those there's no product to show.
+### Best Fit And Error States
 
----
+The funnel should not dead-end when filters get too narrow. If the user's filters or answers are restrictive, the product should broaden the candidate pool silently and show the strongest available companions. The user does not need to know that the match is partial; they need a credible next person to meet.
 
-## 16. Out of scope (will be stated explicitly in submission)
+Overconstrained browse:
 
-- Auth, accounts, persistence beyond a session.
-- Real model calls. Architecture is shaped to drop them in cleanly at the seams in §8.
-- Voice, image upload, user-uploaded avatars.
-- Multi-character chats, group conversations.
-- Settings, preferences, content controls.
-- Safety / moderation surfaces (huge in a real product; v1 deliberately doesn't pretend).
-- Analytics or A/B harness. I'll annotate where I'd wire them.
-- Internationalization.
+> I think you might like these.
+
+Actions:
+
+- show me softer
+- show me bolder
+- show more like this
+
+Image unavailable:
+
+- Use a soft blurred color/initials fallback.
+- Keep the chat and copy calm.
+- Never show a broken image icon.
+
+No exact search hit:
+
+> I found a few that feel close.
 
 ---
 
-## 17. Open questions
+## 7. Path B - Quick Match
 
-1. **Does Browse skip the funnel entirely?** Leaning: keep the one-question intro for the conversational tone, but a "skip" link is always visible from frame one. The opening question is one chip and ~3 seconds — cheap enough to be worth the framing.
-2. **Creator depth: chips only, or a freeform "anything else?" field?** Leaning: include it, gated at the end, capped at ~280 chars. Without it, Create collapses to Match-with-more-steps. With it, the user who arrived with a specific vision gets a real canvas without the surface ballooning.
-3. **Is the Match reveal re-runnable?** Leaning: yes, with "Show me someone else" and "Let me see all of them" as parallel CTAs to the primary "Start chatting".
-4. **Does the chat have suggested-reply chips?** Leaning: yes — it continues the funnel's chip metaphor into the chat itself, and gives the user a soft on-ramp when they don't know what to say. Cost is low; payoff for the demo is high.
-5. **Should anonymous-session characters created in Create survive a refresh?** Leaning: yes, via sessionStorage. Across days, no — out of scope.
+Quick Match is for users who want the product to decide. It should feel like being understood quickly, not like taking a personality quiz.
 
-I'd want to commit to these answers before I start building. Any of them is reversible later if the build reveals they're wrong.
+### Question Strategy
+
+Ask only enough questions to make a credible match. Start broad, then branch.
+
+Core questions:
+
+1. What kind of company feels right tonight?
+2. Should they lead, listen, tease, or ask?
+3. What should the first conversation avoid?
+4. Do you want familiar, surprising, or a little dangerous?
+
+The fourth question is dynamic. It only appears if the previous answers conflict or are too broad.
+
+### Example Match Flow
+
+Companion:
+
+> I can choose. Give me a little signal first.
+
+Question:
+
+> When they answer, what should you feel?
+
+Replies:
+
+- calmer
+- wanted
+- challenged
+- entertained
+- understood
+
+If the user chooses "calmer", the portrait lighting warms and the candidate pool shifts toward gentle/listener characters. If the user chooses "challenged", the portrait may become sharper, more direct, higher contrast.
+
+### Matching Moment
+
+Avoid a spinner. Use a narrated reveal:
+
+> Looking for someone warm, unrushed, and not too polished...
+
+> Someone who can listen without making it heavy.
+
+> I think you should meet Iris.
+
+During this, the portrait should transition from the generic/in-progress presence into the matched character. It can feel like the product is focusing the image.
+
+### Match Reveal
+
+The reveal needs enough rationale to feel intelligent:
+
+- Large final portrait.
+- Companion name.
+- First message preview.
+- "Why her" or "Why them" panel.
+- Fit rationale shown in human language, not technical scoring.
+
+Example:
+
+> I picked Iris because you asked for soft, honest, and unrushed. She tends to ask one real question at a time.
+
+Actions:
+
+- "say hi"
+- "show me another"
+- "show similar"
+- "open everyone"
+
+### Bad Match Recovery
+
+If the user rejects a match:
+
+> Good. That helps. Was it the look, the voice, or the energy?
+
+Reply options:
+
+- look
+- voice
+- energy
+- all of it
+- show me choices
+
+This turns rejection into signal. It should never feel like failure.
+
+---
+
+## 8. Path C - Find Someone Specific
+
+This path is for users who do not want the default companion and are waiting for someone more specific. It still satisfies the "create your own character" requirement, but the framing should feel more emotionally real than "make someone." The user is describing who they hoped would show up, and the product shapes a companion around that.
+
+### Specific Companion Entry
+
+If the user chooses "I'm waiting for someone else" or writes a specific prompt, the current portrait gently recedes and the next companion starts as a soft, unresolved presence. It becomes clearer with each answer.
+
+Opening copy:
+
+> Tell me who you were hoping would answer.
+
+> Start with the feeling. What should they bring into the room?
+
+Reply options:
+
+- warmth
+- nerve
+- patience
+- mischief
+- honesty
+- calm
+
+### Specific Companion Steps
+
+The flow can have many steps, but they should not be presented as a checklist. Each step is a chat turn. Progress is implied by the companion becoming more visually and verbally specific.
+
+Suggested sequence:
+
+1. Feeling: what emotional atmosphere should they bring?
+2. Role: what place do they hold in the user's life?
+3. Voice: how do they speak?
+4. Pace: how quickly do they get close?
+5. Boundaries: what should they avoid or respect?
+6. Ritual: when and how do they show up?
+7. Appearance: what should they look and feel like visually?
+8. Name: choose or generate a name.
+9. First message: preview and adjust before entering chat.
+
+Not every user needs every step. If someone writes "I want a dry, older mentor who checks in after work and does not flirt", the flow can skip several chip questions and move to preview.
+
+### Voice Preview
+
+Voice should be demonstrated, not described.
+
+Instead of asking "choose a voice: warm, witty, poetic", show three sample replies:
+
+- "Tell me the clean version first. Then the real one."
+- "I can sit with you for a minute. No fixing."
+- "You are doing that thing where you make it sound fine."
+
+The user chooses the reply that sounds right. The selected voice becomes part of the companion profile.
+
+### Appearance And Portrait Generation
+
+Appearance should avoid a long checklist of body/face sliders. It should be mood-led:
+
+- "soft studio light"
+- "night window"
+- "sharp city energy"
+- "quiet room"
+- "warm apartment"
+- "older soul"
+- "androgynous edge"
+- "classic beauty"
+- "unusual but grounded"
+
+The portrait updates after these choices. The user can ask for variations:
+
+- warmer
+- less polished
+- more direct
+- softer eyes
+- closer
+- different room
+
+For the demo, these can map to pre-generated image sets. The interface should make it feel generated even if it is deterministic.
+
+### First-Chat Context
+
+The flow can capture one or two pieces of context for the first message, but this should not become a separate profile surface yet. Keep it lightweight and tied to the handoff into chat.
+
+Context prompts:
+
+> What should they know before they say hello?
+
+> Is there anything you do not want them to push on?
+
+> What should the first message understand about you?
+
+This is the emotional bridge into the first conversation.
+
+### Create Finish
+
+The final moment should not say "complete". It should feel like meeting.
+
+Copy options:
+
+- "meet Mira"
+- "say hi to Noa"
+- "let Iris in"
+
+Before entering chat, show a concise preview:
+
+- portrait
+- name
+- first message
+- what shaped them
+- one last option to adjust tone or image
+
+---
+
+## 9. Mock Paywall
+
+A mocked paywall can be part of the web funnel, but it should not sabotage the assignment's requirement to reach a first conversation.
+
+The paywall should be designed as a product moment, not a payment integration. No real payment, no account setup, no checkout details.
+
+### Paywall Philosophy
+
+The user should never feel punished for exploring. The first conversation must begin before the paywall appears. The cleanest demo gate is "continue beyond the preview conversation": the user gets a first exchange, understands the companion, and only then sees the continuation gate.
+
+The paywall should appear when the user tries to continue after the preview conversation, not before the first chat starts.
+
+The paywall should frame one value:
+
+- continue beyond the preview conversation
+
+### Recommended Demo Gate
+
+Use a soft gate after the user has seen the companion's first message and had a short preview exchange:
+
+Title:
+
+> Keep talking with Mira?
+
+Body:
+
+> Your preview is ready to continue.
+
+Actions:
+
+- "continue" - opens mocked premium success
+- "not now" - keeps the user in preview mode
+- "try someone else" - returns to matching or browse
+
+This lets the demo show monetization thinking without blocking the assignment's required first conversation.
+
+### Paywall States
+
+Dismissed:
+
+> No problem. This chat stays in preview.
+
+Mock success:
+
+> You're in. Keep going.
+
+Error:
+
+> That did not go through. Nothing changed.
+
+The error should be inline and calm. No scary red payment failure state.
+
+---
+
+## 10. First Conversation
+
+The first conversation is the destination. It should feel earned by the funnel.
+
+### Arrival From Browse
+
+If the user came from Browse:
+
+- First message uses the companion's authored opener.
+- The opener can reflect any filters or refinements that led here.
+- Suggested replies help the user start naturally.
+
+Example:
+
+> You found me through the quiet ones. Good instinct. What should we do with the silence?
+
+### Arrival From Match
+
+If the user came from Match:
+
+- First message references the match rationale.
+- The companion acknowledges the user's chosen tone.
+
+Example:
+
+> I heard you wanted honest and unrushed. I can do that. Tell me the easy version first.
+
+### Arrival From Create
+
+If the user came from Create:
+
+- First message references the traits, context, and ritual the user picked.
+- The portrait uses the final selected state.
+
+Example:
+
+> You asked me to be warm, direct, and not too eager to fix things. So I will start simple: what part of today are you still carrying?
+
+### Chat Screen Design
+
+The chat should keep the large portrait present.
+
+Desktop:
+
+- left chat
+- right portrait/video-still
+- optional slim strip for portrait states or suggested replies
+- small controls for expression/lighting/state if useful
+
+Mobile:
+
+- portrait top
+- chat bottom
+- suggested replies above input
+
+The first chat does not need to support deep conversation forever. It needs the first 30-60 seconds to feel alive.
+
+---
+
+## 11. How AI Shows Up
+
+The demo does not need actual AI. It needs the product idea to be visible. All "AI" behavior can be deterministic, prewritten, or generated ahead of time.
+
+### AI-Like Product Moments
+
+Personalized question sequencing:
+
+- The next question changes based on previous answers.
+- Broad answers trigger clarifying questions.
+- Specific free text skips obvious steps.
+
+Discovery ranking:
+
+- Companions are ranked by fit against mood, role, tone, pace, and boundaries.
+- Results explain why they are shown.
+
+Match logic:
+
+- Match reveal references the user's actual answers.
+- Rejections become signal for the next reveal.
+
+Creator suggestions:
+
+- The app suggests voice lines, names, rituals, and visual directions.
+- Suggestions feel generated, but can come from curated templates.
+
+Portrait generation:
+
+- The portrait changes after answers.
+- Variations imply generated images, even if pre-generated.
+
+Context carryover:
+
+- The app converts answers into lightweight context for reveal copy and the first message.
+- There is no dedicated memory panel in this version.
+
+First message:
+
+- The opener is arrival-aware.
+- Browse, Match, and Create produce different first messages.
+
+The important thing is that users see cause and effect: "I said this, so the product changed that."
+
+---
+
+## 12. Copy Principles
+
+The copy should be warm, direct, and emotionally literate. It should avoid generic product language.
+
+Use:
+
+- "tell me what you want this to feel like"
+- "good. that helps."
+- "want someone softer, or someone sharper?"
+- "keep talking"
+- "say hi"
+- "show me another"
+- "keep that"
+
+Avoid:
+
+- "submit"
+- "next step"
+- "complete your profile"
+- "configure preferences"
+- "AI-powered personalization"
+- "start onboarding"
+- "finish setup"
+
+The product should not over-explain itself. Users should understand the flow by using it.
+
+---
+
+## 13. States And Edge Cases
+
+The polish requirement matters. Every important state should have designed behavior.
+
+### Loading
+
+Avoid spinners when possible. Use narrative loading:
+
+- "looking for the right kind of quiet..."
+- "softening the voice..."
+- "trying a warmer room..."
+- "checking who fits that pace..."
+
+Portrait loading can use blurred color fields, low-res previews, or a soft focus transition.
+
+### Empty
+
+Low-confidence match:
+
+The product should still show someone. Broaden the candidate pool behind the scenes, pick the strongest available companion, and present them confidently.
+
+Copy:
+
+> I think you should meet Iris.
+
+Variant fallback:
+
+If a requested portrait variant is unavailable, keep the best current portrait and offer adjacent directions.
+
+> Try this version, or we can make the room softer.
+
+No exact search result:
+
+> Here are a few to start with.
+
+### Error
+
+Image generation/mock failure:
+
+> That look did not come together. Your choices are still saved.
+
+Chat send failure:
+
+> That did not go through.
+
+Paywall mock failure:
+
+> That did not go through. Nothing changed.
+
+### User Indecision
+
+If the user repeatedly chooses "anything" or skips:
+
+> I can choose. I will keep it easy.
+
+Then reveal a popular, low-risk companion with a confident, simple rationale:
+
+> I think an easy start makes sense. Meet Iris.
+
+### User Rejection
+
+If the user rejects multiple matches:
+
+> I am missing something. Want to show me in your own words?
+
+Offer free text and then a broad browse view.
+
+### Sensitive Input
+
+The demo does not need a full moderation product, but it should avoid awkward crashes. If a user writes something outside scope:
+
+> I cannot build that here. Want to keep it adult, respectful, and fictional?
+
+Then offer safer adjacent choices.
+
+---
+
+## 14. Mobile Direction
+
+Mobile should not be a compressed desktop design. It should be portrait-first.
+
+### Mobile Layout
+
+- Full-screen portrait as the emotional anchor.
+- Bottom chat sheet for funnel turns.
+- Reply chips stacked with large tap targets.
+- Portrait state thumbnails along the side or behind the sheet.
+- Input always reachable.
+
+### Mobile Motion
+
+- Portrait softly changes between answers.
+- Chat sheet rises and settles as needed.
+- Chosen answers appear as small, temporary confirmation moments.
+- Avoid heavy transitions that make the app feel slow.
+
+The mobile experience should feel like texting someone whose face is right there, not filling out a mobile form.
+
+---
+
+## 15. Desktop Direction
+
+Desktop should use space to create presence and clarity.
+
+### Desktop Layout
+
+- Left: conversation.
+- Right: large portrait.
+- Optional portrait state stack.
+- Minimal nav, if any.
+
+Desktop is where the product can show the strongest visual concept: a companion who stays beside the chat from first question to first conversation.
+
+---
+
+## 16. Asset Plan
+
+We can generate as many assets as needed. The asset set should support the product story.
+
+### Required Concept Assets
+
+For each of 3-5 seed companions:
+
+- primary portrait
+- warm state
+- curious state
+- closer state
+- final chat state
+- small thumbnail/crop variants
+
+For creator flow:
+
+- 2-3 base companion directions
+- variation sets for mood, lighting, and distance
+- generated-looking preview thumbnails
+
+For UI:
+
+- blurred portrait placeholders
+- soft room/background variants
+- empty state visual treatment
+
+The images should be consistent enough to feel like the same companion across states. The product depends on continuity.
+
+---
+
+## 17. Demo Scope
+
+The demo should be complete enough to prove the product idea:
+
+1. App opens directly into the conversational shell.
+2. User can browse existing companions and reach first chat.
+3. User can get a quick match and reach first chat.
+4. User can create a companion through chat and reach first chat.
+5. Portrait changes during the funnel.
+6. The first chat references the user's path.
+7. A mocked paywall appears when the user tries to continue beyond the preview conversation.
+8. Loading, empty, error, rejection, and skipped-answer states are designed.
+
+### What Can Stay Fake
+
+- Real AI calls.
+- Runtime image generation.
+- Real payment.
+- Account creation.
+- Long-term persistence.
+- Deep chat intelligence after the first few turns.
+
+### What Must Feel Real
+
+- The first screen.
+- The portrait changes.
+- The branching conversation.
+- The match rationale.
+- The create preview.
+- The first message in chat.
+- The paywall as a continuation gate after preview.
+- The copy and transitions.
+
+---
+
+## 18. Suggested Build Order From A Product Perspective
+
+This is not a technical implementation plan, but it gives the product order of operations.
+
+1. Nail the first screen: chat plus portrait presence.
+2. Define the companion state model: what changes visually and emotionally after answers.
+3. Write the shared conversation script and branch rules.
+4. Build the Match path because it best proves personalization quickly.
+5. Build the Create path because it best proves specificity.
+6. Add Browse as an escape hatch and discovery mode, not as the product's first impression.
+7. Add first chat arrivals for Browse, Match, and Create.
+8. Add mocked paywall after the first preview exchange.
+9. Add loading, empty, error, rejection, and skip states.
+10. Polish mobile portrait-first flow.
+11. Polish desktop split-presence flow.
+12. Generate final portrait assets and state variants.
+
+If scope gets tight, protect the first screen, Match, Create, and first chat. Browse can be narrower as long as "show everyone" and direct discovery exist.
+
+---
+
+## 19. Success Criteria
+
+The work succeeds if a reviewer can understand the product idea within the first minute:
+
+- This is a companion product, not a generic chatbot.
+- The entry experience is itself conversational.
+- The portrait presence makes the companion feel real.
+- The user's answers visibly change the experience.
+- Browse, Match, and Create are all handled.
+- The first chat feels connected to the funnel.
+- AI is represented through product behavior, not technical claims.
+- The flow feels polished enough to be a real product direction.
+
+The key test: after reaching the first chat, the user should feel that the companion did not come from a list. They should feel the companion emerged from what they just told the product.

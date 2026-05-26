@@ -4,81 +4,77 @@ Guidance for coding agents working in this repository.
 
 ## Project Shape
 
-This is a frontend-only Next.js App Router prototype for the AI companion entry experience described in `docs/PLAN.md`. The core product promise is the path from app open to first conversation:
+This is a frontend-only Next.js prototype for the AI companion entry experience described in `docs/PLAN.md`. The project has pivoted from a route-first browse/match/create app into a conversational web funnel with a large evolving companion portrait.
 
-- `/` conversational funnel entry
-- `/browse` discovery grid
-- `/c/[id]` character detail
-- `/match` quick match flow
-- `/create` character creator
-- `/chat/[id]` thin chat terminus
+The core product promise is the path from app open to the user's first preview conversation:
 
-Do not add a backend, auth, account persistence, analytics, real model calls, or moderation surfaces unless the plan changes. "AI" behavior should stay deterministic and localized behind functions that can later be replaced with model calls.
+- A default companion is visible immediately.
+- The entry flow happens through chat, not a classical form or wizard.
+- Users can browse existing companions, get matched quickly, stay with the default companion, or say "I'm waiting for someone else" to shape someone specific.
+- The companion portrait changes as the user answers.
+- The first conversation starts before any paywall appears.
+- A mocked paywall can appear only when the user tries to continue beyond the preview conversation.
+
+Do not add a backend, auth, account persistence, analytics, real payments, real model calls, or full moderation surfaces unless the plan changes. "AI" behavior should stay deterministic and localized behind functions that can later be replaced with model calls.
+
+## Current Product Decisions
+
+- No dedicated memory / "what I know" panel for now. User signals can affect copy, recommendations, portrait state, and first-chat context, but do not need a separate visible surface.
+- Do not use "help me make someone" as the creation framing. Use the default companion plus "I'm waiting for someone else" and follow-up questions.
+- The funnel should always produce a viable companion. If answers or filters are restrictive, broaden silently and show best-fit results instead of exposing "no match" logic.
+- The paywall is for continuing beyond the preview conversation, not for starting the first chat.
+- Generated realistic portrait assets are central to the product direction. Use `design/` concepts as the visual reference point.
+
+## Existing Implementation Status
+
+The current app code was built for the previous direction. Treat it as legacy exploration until each piece is deliberately adapted.
+
+- Existing route skeletons (`/`, `/browse`, `/c/[id]`, `/match`, `/create`, `/chat/[id]`) may be kept, replaced, or heavily revised.
+- Existing primitives may be reused if they help the new portrait-first chat shell.
+- Existing browse/match/create assumptions should not constrain the new flow.
+- Track progress in `docs/IMPLEMENTATION.md`.
 
 ## Stack
 
 - Next.js App Router with TypeScript
 - Tailwind CSS v4 with tokens in `src/app/globals.css`
-- Framer Motion for shared-layout and transition work
-- Zustand with `sessionStorage` persistence for funnel/session state
-- Static character data in `src/data/characters.json`
+- Framer Motion for transitions and portrait/chat state changes
+- Zustand with `sessionStorage` persistence for funnel/session state when needed
+- Static companion data and deterministic helpers for demo behavior
 - Hand-rolled primitives in `src/components/ui`
 - Playwright in `tests/e2e/` for visual screenshot review
 
-Use the existing primitives and route structure before introducing new abstractions. Avoid shadcn-style generic component drops; the visual identity should come from this codebase.
-
-### Composite components (`src/components/`)
-
-- `app-shell.tsx` — sticky top bar with brand mark + nav pill, used by interior routes.
-- `character-card.tsx` — reusable character tile (avatar + name + bio + tag pills + opener). Used in Browse and the "similar in mood" row on character detail.
-- `funnel-entry.tsx` — the `/` entry experience.
-
-### Browse filtering (`src/lib/browse.ts`)
-
-Pure helpers: `applyBrowseFilters(characters, { query, tags, sort, affinityTags? })` returns a filtered+sorted list; `collectTagPool(characters)` returns the sorted tag universe. Sort keys: `popular | new | recommended`. The "Recommended" sort uses `affinityTags` from Match/Create state.
-
-### Primitives (`src/components/ui/`)
-
-- `Surface` — morphing accent backdrop with drift + grain, used for entry-scale pages.
-- `Display` — serif headline with `sm`/`md`/`lg`/`xl` scale and balanced wrapping.
-- `Eyebrow` — small uppercase tracking label, `muted` or `accent`.
-- `Button` — `primary`/`secondary`/`ghost`/`outline` × `sm`/`md`/`lg`. Supports `asChild`.
-- `IconButton` — icon-only round button with accessible `label`.
-- `Chip` — pill-shaped multi-select / filter chip. Supports `selected` state.
-- `ChoiceCard` — rich funnel-choice button with accent dot, label, hint, trailing slot.
-- `Card` — `default`/`raised`/`muted`/`glass` container, with optional `interactive` hover lift.
-- `Avatar` — radial-gradient accent tile/disc with size variants `sm`/`md`/`lg`/`xl`.
-- `Tag` — small uppercase pill, supports per-character accent tinting.
-- `MessageBubble` — chat bubble (`character` accent-tinted, `user` filled, `system` dashed).
-- `Field` — input / textarea (`multiline`) with label + hint + invalid state.
+Avoid shadcn-style generic component drops; the visual identity should come from this codebase and the generated concept direction.
 
 ## Product Direction
 
-- Mobile-first.
-- Chat is the product; the funnel should feel conversational, not like a form.
-- Copy should be warm and direct. Avoid generic labels like "Submit".
-- Character names and display moments use the editorial serif. UI and body text use the sans face.
-- Use dark base colors, character accents, and restrained motion.
-- Keep cards at `8px` radius or less.
+- Mobile-first, portrait-first.
+- Chat is the product surface; the funnel should feel like a conversation, not a form.
+- The large realistic portrait is the emotional anchor.
+- Copy should be warm, direct, and specific. Avoid generic labels like "Submit", "Next step", and "Complete profile".
+- Character names and display moments use editorial type; UI and body text use the sans face.
+- Use dark base colors, realistic portrait lighting, restrained motion, and precise spacing.
 - Use icons only when they clarify an action.
+- Keep cards at `8px` radius or less.
 
 ## Implementation Priorities
 
-Follow the build order in `docs/PLAN.md` unless the user redirects. Track implementation progress in `docs/IMPLEMENTATION.md`.
+Follow `docs/PLAN.md` and `docs/IMPLEMENTATION.md` unless the user redirects.
 
-1. Design tokens, fonts, primitives
-2. Character seed data
-3. Funnel shell and morphing UI
-4. Browse, filters, character page, chat shell
-5. Match flow
-6. Create flow
-7. Empty/loading/error states
-8. Copy pass
-9. Mobile pass
-10. Motion pass
-11. Demo polish
+1. First-screen chat plus portrait shell.
+2. Default companion portrait and state changes.
+3. Shared conversational branching.
+4. Quick match path.
+5. "I'm waiting for someone else" specific-companion path.
+6. Browse/discovery as a secondary path with best-fit fallback.
+7. First preview conversation for every path.
+8. Mock paywall after preview continuation.
+9. Loading, fallback, error, rejection, and skipped-answer states.
+10. Mobile portrait-first polish.
+11. Desktop split-presence polish.
+12. Final portrait assets and screenshot review.
 
-If scope needs to be cut, protect the funnel shell and browse path first.
+If scope needs to be cut, protect the first screen, quick match, specific-companion path, and first preview conversation.
 
 ## Commands
 
@@ -92,23 +88,23 @@ If scope needs to be cut, protect the funnel shell and browse path first.
 
 Run `npm run lint`, `npm run typecheck`, and `npm run build` before handing off meaningful code changes when practical. When making visible UI changes, also run `npm run test:e2e` and review the PNGs under `test-results/screenshots/` before committing.
 
-### Playwright notes
+### Playwright Notes
 
 - The suite boots `next start` on port `4321` via `webServer`. It needs a fresh `npm run build` first.
 - Only Chromium is installed (`npx playwright install chromium`). The mobile project uses Chromium-based Pixel emulation, not WebKit.
-- Hover-state tests skip on mobile (no hover affordance there).
+- Hover-state tests skip on mobile.
 - Screenshots are namespaced by project: `test-results/screenshots/desktop/` and `test-results/screenshots/mobile/`. They are gitignored.
 
 ## State And Data
 
-- Funnel state belongs in `src/store/funnel-store.ts`.
-- Static character records belong in `src/data/characters.json`.
-- Keep matching, rationale, voice-preview, and chat-response logic deterministic.
-- Session persistence should use `sessionStorage`, not local storage, until the plan changes.
+- Keep funnel/session state deterministic and local.
+- Use `sessionStorage`, not local storage, until the plan changes.
+- Static companion records can live in `src/data/characters.json` or a replacement data file if the new portrait/state model needs a different shape.
+- Keep matching, rationale, portrait-state selection, voice-preview, and chat-response logic deterministic for the demo.
 
 ## Editing Notes
 
 - Keep changes scoped to the user request.
-- Preserve the current design language and route map.
+- Prefer the new product plan over the old route map.
 - Prefer structured data and typed helpers over ad hoc string manipulation.
 - Do not commit generated build output or `node_modules`.
