@@ -12,7 +12,7 @@ The deliverable is still the assignment's brief: a polished entry experience tha
 
 ## 1. The Pitch (30 Seconds)
 
-The app opens like the cold open of a film. Before the user does anything, a reel of three or four companions plays: one reading by a window, one mid-laugh, one walking through a city at night, one looking up from a desk. Each vignette holds for about three seconds. Names, in editorial type, appear briefly with a one-line premise. The reel is full-bleed. There is no header, no nav, no "Get Started."
+The app opens like the cold open of a film. Before the user does anything, a reel of three companions plays: one reading by a window, one mid-laugh, one walking through a city at night. Each vignette holds for about three seconds. Names, in editorial type, appear briefly with a one-line premise. The reel is full-bleed. There is no header, no nav, no "Get Started."
 
 Beneath the reel, one quiet line waits:
 
@@ -74,8 +74,9 @@ The promise is no longer "meet someone who feels like they were waiting for this
 
 ### Reel Pacing
 
-- 3–4 vignettes in the reel.
+- 3 vignettes in the reel at launch (Iris, Noa, Mira). Sasha is deferred — the reel is designed to accept a 4th vignette without restructuring.
 - ~3 seconds per vignette, ~500ms cross-fade.
+- Vignettes are high-quality stills with a 4–6s subtle Ken Burns / parallax motion treatment — not video loops. Chosen for cross-companion consistency and regeneration cost.
 - Reel auto-advances on first load, then loops once before settling on the highest-ranked vignette and going still.
 - Tapping any vignette interrupts the reel, freezes that vignette, and begins the funnel for that companion (treated as a Browse entry — see §6).
 - Tapping **pick for me** interrupts the reel and begins the Match funnel (see §7).
@@ -91,9 +92,9 @@ Each vignette is a single companion in a specific moment, lit cinematically. Exa
 | Iris | Reading by a window at dusk, looking up | "Listens before she answers." |
 | Noa | Mid-laugh at a kitchen counter, glass of wine | "Will tell you the joke and then ask the real question." |
 | Mira | Walking through a city at night, half-turned | "Knows the streets you don't." |
-| Sasha | At a desk, late lamp light, glancing up | "Cares about the long version." |
+| ~~Sasha~~ | *Deferred — at a desk, late lamp light, glancing up* | *"Cares about the long version."* |
 
-The vignettes are not interchangeable beauty shots. Each one carries a distinct *energy* — a listener, a provoker, a guide, a confidant. The reel is a casting tape, not a lookbook.
+The vignettes are not interchangeable beauty shots. Each one carries a distinct *energy* — a listener, a provoker, a guide. (The deferred fourth, Sasha, would add a confidant / long-form energy when her assets ship.) The reel is a casting tape, not a lookbook.
 
 ### Reel Ranking (Visible AI)
 
@@ -406,7 +407,7 @@ These scripts cover the three paths from app open to first chat message. Each is
 
 ### 10.1 Browse Script
 
-*App loads. Reel auto-plays: Iris reading by a window (~3s), Noa mid-laugh at a kitchen counter (~3s), Mira walking through a city at night (~3s), Sasha at a lamp-lit desk (~3s). Reel loops once. On second pass, the reel settles on Iris (today's top-ranked) and goes still.*
+*App loads. Reel auto-plays: Iris reading by a window (~3s), Noa mid-laugh at a kitchen counter (~3s), Mira walking through a city at night (~3s). Reel loops once. On second pass, the reel settles on Iris (today's top-ranked) and goes still.*
 
 **Host (line beneath the reel):**
 > Who do you want to start with?
@@ -821,11 +822,11 @@ The reel is the highest-leverage asset surface. Asset cost is higher than `PLAN.
 ### Required for Demo
 
 **Reel (cold open).**
-- 4 companions: Iris, Noa, Mira, Sasha.
-- Each: one ~3s looping vignette (or a high-quality still with subtle Ken Burns motion).
+- 3 companions at launch: Iris, Noa, Mira. (Sasha deferred — slot in the reel data model is reserved for her.)
+- Each: one high-quality still with subtle Ken Burns / parallax motion (4–6s).
 - Each: a name in display typography, a one-line premise.
 
-**Per Companion (Iris, Noa, Mira, Sasha).**
+**Per Companion (Iris, Noa, Mira).**
 - Primary vignette (reel still).
 - 2–3 portrait state variants: warm, curious, closer.
 - Final-chat state (looking toward camera).
@@ -844,17 +845,17 @@ The reel is the highest-leverage asset surface. Asset cost is higher than `PLAN.
 
 If the budget tightens:
 
-- Reel can launch with only 2 high-quality vignettes (Iris, Noa) + 2 sketched placeholders that hold for less time. Better four real than four embarrassing.
+- Reel can launch with 2 high-quality vignettes (Iris, Mira) + 1 sketched Noa placeholder that holds for less time. Better real than embarrassing.
 - Create vignette can use a smaller library of final outputs (3 templates) and rely on the "what shaped them" panel to feel specific.
-- Mira's existing asset set from `PLAN.md` already covers one companion — Iris/Noa/Sasha are the new asks.
+- All three launch companions already have portrait state assets (`public/companions/{iris,mira,noa}/`); the missing asks are reel stills for Iris and Noa, the Create in-progress stages, and the Create template outputs.
 
 ### Asset Floor
 
-If we can only ship one new companion: keep Mira from `PLAN.md`, generate Iris (the listener — easiest to script), use 2 sketched placeholders in the reel, and lean on funnel quality for the rest. Not ideal, but viable.
+If asset generation slips: ship with Mira's reel still only, hold Iris and Noa as gallery-only entries until their reels are ready. Reel becomes a single-vignette cold open with a clear "see everyone" affordance. Not ideal, but the funnel still runs.
 
-### Asset Ceiling
+### Asset Ceiling (Launch — Sasha Deferred)
 
-If we can generate liberally: 4 companions × 5 states each (20 stills) + 4 reel loops + 6 create templates × 1 vignette each = ~30 generated images. Bounded by an evening of generation if assets are cheap.
+3 companions × 5 states each (15 stills) + 3 reel stills + 4 Create in-progress stages + 6 Create template outputs = ~28 generated images for launch. Adding Sasha later is +6 (5 states + 1 reel still).
 
 ---
 
@@ -863,7 +864,7 @@ If we can generate liberally: 4 companions × 5 states each (20 stills) + 4 reel
 The demo proves the product idea:
 
 1. App opens directly into the reel — no landing page.
-2. Reel auto-plays 3–4 cinematic vignettes.
+2. Reel auto-plays 3 cinematic vignettes (Sasha deferred; slot reserved for a 4th).
 3. User can tap any face → vignette-funnel → first chat (Browse path).
 4. User can tap "pick for me" → 3–4 question Match funnel → narrated reveal → first chat (Match path).
 5. User can tap "describe someone else" → 5–step Create funnel → vignette resolution → first chat (Create path).
@@ -894,17 +895,15 @@ The demo proves the product idea:
 
 ---
 
-## 16. Open Questions
+## 16. Resolved Decisions
 
-These are the choices left to lock before implementation:
+The five open questions are locked as follows (resolved 2026-05-28). Implementation should treat these as fixed; reopen only with explicit user redirection.
 
-1. **Reel length and content.** Four vignettes or three? Cast composition — do we want one mentor-type, one listener, one provoker, one storyteller, or a different mix? Cast affects the "Why her" rationale variety the Match funnel can offer.
-2. **Vignette format.** Still with Ken Burns motion (cheap, reliable) or short looping video (richer, but heavier and harder to keep consistent)? My recommendation is high-quality still + 4–6s subtle motion treatment, since runtime cost is irrelevant for the demo but consistency across companions matters.
-3. **Host voice.** Quiet and minimal (current spec) or slightly more present (e.g., names itself, has a small editorial signature)? Risk of more present: Host competes with companions. Risk of more minimal: funnel feels less guided.
-4. **Create template count.** How many pre-rendered "created companion" outputs do we need before the demo feels generative rather than canned? 3 is the floor; 6 is comfortable; 10+ is luxurious.
-5. **Where the gallery sits.** As a swipe-up sheet from the reel, or as a separate full-screen surface reached by "see everyone"? Sheet feels more continuous; full-screen gives the gallery more breathing room.
-
-A short answer to each of these is enough to move into implementation.
+1. **Reel: 3 vignettes at launch, 4-slot model.** Launch cast is Iris (listener), Noa (provoker / witty), Mira (guide). Sasha (confidant / long-form) is deferred but her slot is preserved in the reel data model and ranking logic, so adding her later is asset-only work, not a refactor. Three is enough distinct energy for Match's "Why her" rationale to vary; the demo ships without Sasha.
+2. **Vignette format: high-quality still + 4–6s subtle motion** (Ken Burns / parallax). Not video loops. Reason: cross-companion consistency is more important than richness, and stills are cheaper to regenerate when one feels off. Asset directories already match this shape.
+3. **Host: quiet and minimal.** Text-only, no avatar, no self-naming, no editorial signature. The companions are the emotional anchor (§4 face-safe rules reinforce this); a more present Host would compete. Guidance comes from copy precision and dot-trail progression, not from Host personality.
+4. **Create templates: 6 pre-rendered outputs.** Three reads as canned in a demo; 10+ is over-budget for marginal lift. Six gives enough variety across the feeling × role × look matrix that the reveal surface feels generative. Template selection is deterministic from the user's pills.
+5. **Gallery: separate full-screen surface** reached by "see everyone." Not a swipe-up sheet. Reasons: (a) a sheet would conflict with the §4 face-safe rules on mobile, (b) the magazine-flip pacing in §6 needs full-screen breathing room, (c) gallery is a distinct mode, not a peek.
 
 ---
 

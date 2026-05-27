@@ -222,28 +222,105 @@ Required for floor demo (Tier 1 only, Sasha sketched):
 - Iris primary + 4 variants = 5 files
 - Noa primary + 4 variants = 5 files
 - Mira reel vignette = 1 file
-- = **11 files.**
+- Explicit Iris and Noa reel stills = 2 files
+- = **13 files.**
+
+**Generated status — Tier 1 floor demo (updated May 28, 2026).**
+
+Generated with the built-in image generation tool and copied into the repo:
+
+- `[x]` `public/companions/iris/iris-neutral.png`
+- `[x]` `public/companions/iris/iris-reel.png`
+- `[x]` `public/companions/iris/iris-warm.png`
+- `[x]` `public/companions/iris/iris-curious.png`
+- `[x]` `public/companions/iris/iris-closer.png`
+- `[x]` `public/companions/iris/iris-final-chat.png`
+- `[x]` `public/companions/noa/noa-neutral.png`
+- `[x]` `public/companions/noa/noa-reel.png`
+- `[x]` `public/companions/noa/noa-warm.png`
+- `[x]` `public/companions/noa/noa-curious.png`
+- `[x]` `public/companions/noa/noa-closer.png`
+- `[x]` `public/companions/noa/noa-final-chat.png`
+- `[x]` `public/companions/mira/mira-reel.png`
+
+All generated Tier 1 files are `1672x941` PNGs. This matches the existing Mira desktop-wide set but is below the original target resolution of `>=2944x1656`; regenerate at higher resolution later if the final Direction B build needs sharper large-display or mobile-crop output. `iris-reel.png` and `noa-reel.png` are explicit reel-facing stills generated after the initial state sets so the Direction B cold-open can address every reel asset with a consistent `*-reel.png` path.
 
 Required for comfortable demo (everything in §A, §B, §C):
-- §A: 15 cast files (5 per companion × 3) + 1 Mira reel = 16 files
+- §A: 15 cast files (5 per companion × 3) + 1 Mira reel + 2 explicit Iris/Noa reel stills = 18 files
 - §B: 4 in-progress stages + 3 net new templates = 7 files
 - §C: 0–3 fallback files (most can be CSS-derived)
-- = **23–26 files total.**
+- = **25–28 files total.**
 
 **Suggested generation order:**
 1. A1 Iris primary — single file, validates style fidelity to the doc before committing to 20+ generations.
 2. A4 Iris variants via image-to-image from A1.
 3. A2 Noa primary + A4 Noa variants.
-4. A3 Sasha primary + A4 Sasha variants.
-5. A5 Mira's reel-specific vignette via image-to-image from her existing primary.
-6. B1 in-progress stages (Stage 4 derived from B2 #1 Noa, others fresh).
-7. B2 net-new templates (#2 Vera, #4 Playful, #5 Gentle).
-8. C2 / C3 fallbacks (skip C1 if CSS blur is acceptable).
-9. D1 / D2 / D3 screen mockups for design preview — only if needed; the existing `concept-07/08/09` files in `design/` already cover these per `IMPLEMENTATION.md`.
+4. Iris/Noa explicit reel stills (`iris-reel.png`, `noa-reel.png`) if the implementation should use dedicated reel paths instead of `neutral`.
+5. A3 Sasha primary + A4 Sasha variants.
+6. A5 Mira's reel-specific vignette via image-to-image from her existing primary.
+7. B1 in-progress stages (Stage 4 derived from B2 #1 Noa, others fresh).
+8. B2 net-new templates (#2 Vera, #4 Playful, #5 Gentle).
+9. C2 / C3 fallbacks (skip C1 if CSS blur is acceptable).
+10. D1 / D2 / D3 screen mockups for design preview — only if needed; the existing `concept-07/08/09` files in `design/` already cover these per `IMPLEMENTATION.md`.
 
-**Where outputs land in the repo:**
-- Cast vignettes: `public/companions/{iris,noa,sasha}/<name>-<state>.png` (single source per state — no separate `desktop/`, `mobile/`, or `thumbnails/` subdirectories; the existing Mira layout with those subdirs predates this strategy and stays as-is).
-- Mira reel: `public/companions/mira/mira-reel.png`.
-- Create assets: `public/companions/create/{in-progress-1..4,template-2-vera,template-4-playful,template-5-gentle}.png`.
-- Shared fallbacks: `public/companions/_shared/{portrait-blur,soft-fail,ambient-between}.png`.
-- Screen mockups: `design/concept-07-reel-cold-open.png`, `concept-08-match-reveal.png`, `concept-09-create-reveal.png` (already exist per `IMPLEMENTATION.md`).
+**Where outputs land in the repo.**
+
+The convention for **new companions** is a flat directory per companion — one file per state, no `desktop/`/`mobile/`/`thumbnails/` subdirectories, since CSS handles all crops from the single high-res source.
+
+```
+public/companions/iris/
+├── iris-neutral.png        ← A1, 16:9 high-res primary
+├── iris-reel.png           ← explicit cold-open reel still
+├── iris-warm.png           ← A4 warm variant (image-to-image from primary)
+├── iris-curious.png        ← A4 curious variant
+├── iris-closer.png         ← A4 closer variant
+└── iris-final-chat.png     ← A4 final-chat variant
+```
+
+Same shape for `public/companions/noa/` and `public/companions/sasha/`.
+
+**Mira is the exception (legacy layout).** Her existing directory predates the single-source strategy:
+
+```
+public/companions/mira/
+├── mira-{neutral,warm,curious,closer,final-chat}.png   ← legacy mobile-portrait sources
+├── desktop/
+│   └── mira-{state}-desktop.png                        ← legacy desktop-wide (1672×941)
+└── thumbnails/
+    └── mira-{state}-thumb.png                          ← legacy square crops (360×360)
+```
+
+The new A5 reel vignette drops into the flat root: `public/companions/mira/mira-reel.png`.
+
+**Mira migration to the flat layout — required as part of the Direction B rebuild, not before.**
+
+Do not migrate while the current implementation is still loading from the legacy paths — you'll break the existing build for no gain (the existing build is already flagged `[~]` in `IMPLEMENTATION.md`). At rebuild time:
+
+1. Promote each `mira/desktop/mira-{state}-desktop.png` to `mira/mira-{state}.png` (these are the 16:9 sources — they become Mira's single source per state, replacing the legacy mobile-portrait files of the same name).
+2. Delete the legacy `desktop/` subdirectory.
+3. Delete the `thumbnails/` subdirectory (CSS handles thumbnail crops from the single source).
+4. Verify `mira-reel.png` from A5 is in place.
+
+After migration, Mira's directory matches Iris/Noa/Sasha exactly:
+
+```
+public/companions/mira/
+├── mira-neutral.png        ← promoted from desktop/
+├── mira-warm.png           ← promoted from desktop/
+├── mira-curious.png        ← promoted from desktop/
+├── mira-closer.png         ← promoted from desktop/
+├── mira-final-chat.png     ← promoted from desktop/
+└── mira-reel.png           ← new A5 vignette
+```
+
+**Resolution caveat for Mira.** The promoted desktop files are 1672×941, which is lower-resolution than the new companions' target (≥2944×1656). Mobile crops from 1672×941 will look softer than from a higher-res source. Three options at migration time:
+
+- **A — accept the compromise.** Use the promoted files as-is; mobile crops are slightly soft but the desktop primary looks fine. Cheapest.
+- **B — regenerate Mira at high resolution.** Use image-to-image from her existing primary and generate each state at ≥2944×1656. Best quality, ~5 generations of work. Recommended.
+- **C — keep the dual structure.** Cancel the migration, leave Mira's legacy directory alone, and write image-loading code that handles both flat (new companions) and dual (Mira) layouts. Cheap but adds branching to the loader and makes the asset story confusing for future contributors. Not recommended.
+
+**Everything else that gets generated.**
+
+- Create assets: `public/companions/create/{in-progress-1..4,template-2-vera,template-4-playful,template-5-gentle}.png` — flat directory, no subdirs.
+- Shared fallbacks: `public/companions/_shared/{portrait-blur,soft-fail,ambient-between}.png` — only generate the ones you actually need (most are CSS-derivable).
+- Screen mockups: `design/concept-07-reel-cold-open.png`, `concept-08-match-reveal.png`, `concept-09-create-reveal.png` (already exist per `IMPLEMENTATION.md` — regenerate only if the design changes).

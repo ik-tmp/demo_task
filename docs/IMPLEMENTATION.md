@@ -39,6 +39,11 @@ The existing app code can be reused selectively, but it should be treated as leg
   - `public/companions/mira/desktop/` contains a matching desktop-native `1672x941` wide set for the split-presence mockups, so desktop no longer depends on cropping vertical sources.
   - `public/companions/mira/thumbnails/` contains matching `360x360` state-strip crops.
   - Source generations were created with the built-in image generation tool and copied into the project; originals remain under `$CODEX_HOME/generated_images/`.
+- `[x]` Direction B Tier 1 cast asset floor
+  - Generated Iris and Noa as full five-state wide portrait sets in `public/companions/iris/` and `public/companions/noa/`.
+  - Generated dedicated cold-open reel stills at `public/companions/iris/iris-reel.png` and `public/companions/noa/noa-reel.png`.
+  - Generated Mira's reel-specific city-night vignette at `public/companions/mira/mira-reel.png`.
+  - These assets are copied into the repo and tracked in `docs/ASSET-PROMPTS.md`; they are generated art assets only and are not yet wired into a Direction B reel implementation.
 - `[legacy]` Existing Next.js prototype
   - The old browse/match/create/chat route implementations have been replaced by wrappers around the new conversational shell.
   - Some older primitive components and static character data remain available, but the product flow is no longer driven by the old route map.
@@ -132,7 +137,25 @@ Before implementation starts, audit the current codebase and decide what to keep
 
 - `[x]` Seed companion portrait set for current scope.
   - One Mira/default companion set generated and wired throughout the UI.
-  - The original 3-5 seed set direction is intentionally deferred because the current direction is to use one generated companion portrait set and add more later.
+  - Direction B Tier 1 now has two additional generated cast sets, Iris and Noa, plus Mira's reel vignette. Sasha remains sketched/deferred.
+- `[x]` Direction B Tier 1 floor cast assets.
+  - Iris:
+    - `public/companions/iris/iris-neutral.png`
+    - `public/companions/iris/iris-reel.png`
+    - `public/companions/iris/iris-warm.png`
+    - `public/companions/iris/iris-curious.png`
+    - `public/companions/iris/iris-closer.png`
+    - `public/companions/iris/iris-final-chat.png`
+  - Noa:
+    - `public/companions/noa/noa-neutral.png`
+    - `public/companions/noa/noa-reel.png`
+    - `public/companions/noa/noa-warm.png`
+    - `public/companions/noa/noa-curious.png`
+    - `public/companions/noa/noa-closer.png`
+    - `public/companions/noa/noa-final-chat.png`
+  - Mira reel:
+    - `public/companions/mira/mira-reel.png`
+  - All generated Tier 1 files are `1672x941` PNGs. They match the existing Mira desktop-wide size but are lower than the aspirational `docs/ASSET-PROMPTS.md` target of `>=2944x1656`.
 - `[x]` Default companion portrait and states.
   - Desktop-wide:
     - `public/companions/mira/desktop/mira-neutral-desktop.png`
