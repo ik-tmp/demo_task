@@ -1,17 +1,17 @@
 import { Suspense } from "react";
-import { Reel } from "@/components/reel/reel";
+import { Gallery } from "@/components/gallery/gallery";
 import { companions } from "@/lib/companions";
 
-export default function HomePage() {
+export default function GalleryPage() {
   return (
     <Suspense
       fallback={
         <main className="grid h-[100dvh] w-full place-items-center bg-ink-deep text-copy-muted">
-          <span className="text-sm tracking-wide">loading…</span>
+          <span className="text-sm">loading…</span>
         </main>
       }
     >
-      <Reel companions={companions} />
+      <Gallery companions={companions} />
     </Suspense>
   );
 }

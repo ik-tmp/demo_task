@@ -1,6 +1,6 @@
 # Implementation Tracker
 
-Last updated: May 27, 2026
+Last updated: May 28, 2026
 
 This document tracks progress against the rewritten product plan in `docs/PLAN.md`. The project has pivoted from a route-based browse/match/create prototype to a conversational web funnel with a large evolving companion portrait.
 
@@ -44,6 +44,11 @@ The existing app code can be reused selectively, but it should be treated as leg
   - Generated dedicated cold-open reel stills at `public/companions/iris/iris-reel.png` and `public/companions/noa/noa-reel.png`.
   - Generated Mira's reel-specific city-night vignette at `public/companions/mira/mira-reel.png`.
   - These assets are copied into the repo and tracked in `docs/ASSET-PROMPTS.md`; they are generated art assets only and are not yet wired into a Direction B reel implementation.
+- `[x]` Direction B remaining generated assets
+  - Generated Sasha's full wide portrait set plus `sasha-reel.png` in `public/companions/sasha/`.
+  - Generated Create-path in-progress frames and net-new deterministic templates in `public/companions/create/`.
+  - Generated shared fallback backdrops in `public/companions/_shared/`.
+  - These assets are copied into the repo and tracked in `docs/ASSET-PROMPTS.md`.
 - `[legacy]` Existing Next.js prototype
   - The old browse/match/create/chat route implementations have been replaced by wrappers around the new conversational shell.
   - Some older primitive components and static character data remain available, but the product flow is no longer driven by the old route map.
@@ -137,7 +142,7 @@ Before implementation starts, audit the current codebase and decide what to keep
 
 - `[x]` Seed companion portrait set for current scope.
   - One Mira/default companion set generated and wired throughout the UI.
-  - Direction B Tier 1 now has two additional generated cast sets, Iris and Noa, plus Mira's reel vignette. Sasha remains sketched/deferred.
+  - Direction B now has generated cast sets for Iris, Noa, and Sasha, plus reel vignettes for Iris, Noa, Mira, and Sasha.
 - `[x]` Direction B Tier 1 floor cast assets.
   - Iris:
     - `public/companions/iris/iris-neutral.png`
@@ -156,6 +161,27 @@ Before implementation starts, audit the current codebase and decide what to keep
   - Mira reel:
     - `public/companions/mira/mira-reel.png`
   - All generated Tier 1 files are `1672x941` PNGs. They match the existing Mira desktop-wide size but are lower than the aspirational `docs/ASSET-PROMPTS.md` target of `>=2944x1656`.
+- `[x]` Direction B Sasha, Create, and shared fallback assets.
+  - Sasha:
+    - `public/companions/sasha/sasha-neutral.png`
+    - `public/companions/sasha/sasha-reel.png`
+    - `public/companions/sasha/sasha-warm.png`
+    - `public/companions/sasha/sasha-curious.png`
+    - `public/companions/sasha/sasha-closer.png`
+    - `public/companions/sasha/sasha-final-chat.png`
+  - Create:
+    - `public/companions/create/in-progress-1.png`
+    - `public/companions/create/in-progress-2.png`
+    - `public/companions/create/in-progress-3.png`
+    - `public/companions/create/in-progress-4.png`
+    - `public/companions/create/template-2-vera.png`
+    - `public/companions/create/template-4-playful.png`
+    - `public/companions/create/template-5-gentle.png`
+  - Shared:
+    - `public/companions/_shared/portrait-blur.png`
+    - `public/companions/_shared/soft-fail.png`
+    - `public/companions/_shared/ambient-between.png`
+  - All files in this pass are `1672x941` PNGs. `in-progress-4.png` was derived from Noa's neutral asset with a local blur per `docs/ASSET-PROMPTS.md`.
 - `[x]` Default companion portrait and states.
   - Desktop-wide:
     - `public/companions/mira/desktop/mira-neutral-desktop.png`

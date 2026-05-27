@@ -245,6 +245,29 @@ Generated with the built-in image generation tool and copied into the repo:
 
 All generated Tier 1 files are `1672x941` PNGs. This matches the existing Mira desktop-wide set but is below the original target resolution of `>=2944x1656`; regenerate at higher resolution later if the final Direction B build needs sharper large-display or mobile-crop output. `iris-reel.png` and `noa-reel.png` are explicit reel-facing stills generated after the initial state sets so the Direction B cold-open can address every reel asset with a consistent `*-reel.png` path.
 
+**Generated status — remaining Direction B assets (updated May 28, 2026).**
+
+Generated with the built-in image generation tool and copied into the repo, except `in-progress-4.png`, which was derived from Noa's neutral asset with a local Gaussian blur per the B1 note:
+
+- `[x]` `public/companions/sasha/sasha-neutral.png`
+- `[x]` `public/companions/sasha/sasha-reel.png`
+- `[x]` `public/companions/sasha/sasha-warm.png`
+- `[x]` `public/companions/sasha/sasha-curious.png`
+- `[x]` `public/companions/sasha/sasha-closer.png`
+- `[x]` `public/companions/sasha/sasha-final-chat.png`
+- `[x]` `public/companions/create/in-progress-1.png`
+- `[x]` `public/companions/create/in-progress-2.png`
+- `[x]` `public/companions/create/in-progress-3.png`
+- `[x]` `public/companions/create/in-progress-4.png`
+- `[x]` `public/companions/create/template-2-vera.png`
+- `[x]` `public/companions/create/template-4-playful.png`
+- `[x]` `public/companions/create/template-5-gentle.png`
+- `[x]` `public/companions/_shared/portrait-blur.png`
+- `[x]` `public/companions/_shared/soft-fail.png`
+- `[x]` `public/companions/_shared/ambient-between.png`
+
+All files in this pass are `1672x941` PNGs to match the existing generated Direction B asset size.
+
 Required for comfortable demo (everything in §A, §B, §C):
 - §A: 15 cast files (5 per companion × 3) + 1 Mira reel + 2 explicit Iris/Noa reel stills = 18 files
 - §B: 4 in-progress stages + 3 net new templates = 7 files

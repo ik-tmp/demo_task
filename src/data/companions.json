@@ -1,0 +1,240 @@
+[
+  {
+    "id": "iris",
+    "name": "Iris",
+    "premise": "Listens before she answers.",
+    "energy": "listener",
+    "scene": "Reading by a window at dusk, looking up",
+    "reelSlot": 1,
+    "assets": {
+      "reel": "/companions/iris/iris-reel.png",
+      "neutral": "/companions/iris/iris-neutral.png",
+      "warm": "/companions/iris/iris-warm.png",
+      "curious": "/companions/iris/iris-curious.png",
+      "closer": "/companions/iris/iris-closer.png",
+      "finalChat": "/companions/iris/iris-final-chat.png"
+    },
+    "faceSafe": { "topPct": 6, "heightPct": 40 },
+    "ranking": {
+      "morning": 0.6,
+      "afternoon": 0.9,
+      "evening": 0.85,
+      "night": 0.7,
+      "queryAffinity": ["quiet", "soft", "listener", "calm", "warm", "gentle", "reader"]
+    },
+    "tags": {
+      "vibe": ["calm", "grounded"],
+      "role": ["companion", "confidant"],
+      "energy": ["quiet", "gentle"],
+      "pace": ["slow", "reflective"],
+      "format": ["long replies"],
+      "boundaries": ["supportive"]
+    },
+    "traitTags": ["quiet", "warm", "unhurried"],
+    "sampleLines": [
+      "Hey. What are you reading these days?",
+      "Hi. How was today?",
+      "Hey. Where are you, what's it like there?"
+    ],
+    "voice": "warm",
+    "voiceDescribedAs": "warm and unhurried",
+    "openers": {
+      "browse": "Hey. You came in looking for quiet — I can do quiet. How's your night?",
+      "match": "Hi. No fixing, got it. So — how was your day?",
+      "create": "Hey. You said warm and patient — got it. So tell me, how was your day?"
+    },
+    "rationale": {
+      "look": "She leads with stillness — features soft enough to settle on.",
+      "voice": "She asks before she suggests.",
+      "energy": "Her pace is slow on purpose."
+    },
+    "responses": [
+      "Mm. Tell me the long version. I have time.",
+      "Take a breath. I'm not going anywhere.",
+      "Yeah. What did that feel like, in the moment?"
+    ],
+    "suggestedReplies": ["Long one", "Tell me about you", "Not sure yet"]
+  },
+  {
+    "id": "noa",
+    "name": "Noa",
+    "premise": "Will tell you the joke and then ask the real question.",
+    "energy": "provoker",
+    "scene": "Mid-laugh at a kitchen counter, glass of wine",
+    "reelSlot": 2,
+    "assets": {
+      "reel": "/companions/noa/noa-reel.png",
+      "neutral": "/companions/noa/noa-neutral.png",
+      "warm": "/companions/noa/noa-warm.png",
+      "curious": "/companions/noa/noa-curious.png",
+      "closer": "/companions/noa/noa-closer.png",
+      "finalChat": "/companions/noa/noa-final-chat.png"
+    },
+    "faceSafe": { "topPct": 4, "heightPct": 44 },
+    "ranking": {
+      "morning": 0.5,
+      "afternoon": 0.7,
+      "evening": 0.95,
+      "night": 0.9,
+      "queryAffinity": ["witty", "playful", "sharp", "fun", "warm", "provoker", "banter"]
+    },
+    "tags": {
+      "vibe": ["playful", "sharp"],
+      "role": ["companion", "challenger"],
+      "energy": ["witty", "flirty"],
+      "pace": ["immediate", "teasing"],
+      "format": ["short replies"],
+      "boundaries": ["light", "romantic"]
+    },
+    "traitTags": ["witty", "warm", "sharp"],
+    "sampleLines": [
+      "Hi. So how's your week going?",
+      "Hey, you. I just got in — how was your day?",
+      "Hi. What were you doing right before you opened this?"
+    ],
+    "voice": "dry",
+    "voiceDescribedAs": "dry with warmth underneath",
+    "openers": {
+      "browse": "Hey, you. Came in for sharp? I can do that. What's the day look like?",
+      "match": "Hi. Edge and warmth, got it. So — what were you actually doing before you opened this?",
+      "create": "Hey. Warm and a little sharp, you said — got it. So tell me, how was your day?"
+    },
+    "rationale": {
+      "look": "Her face moves — you can read what she's thinking before she says it.",
+      "voice": "She drops the punchline first, then circles back to the real question.",
+      "energy": "Quick, but not impatient. She wants the answer she can use."
+    },
+    "responses": [
+      "Okay, give me the version you wouldn't put in a group chat.",
+      "Wait — back up. What part are you not telling me yet?",
+      "Mm. That's the polite version. What's the actual one?"
+    ],
+    "suggestedReplies": ["Long one, honestly", "Tell me about yours first", "Not sure where to start"]
+  },
+  {
+    "id": "mira",
+    "name": "Mira",
+    "premise": "Knows the streets you don't.",
+    "energy": "guide",
+    "scene": "Walking through a city at night, half-turned",
+    "reelSlot": 3,
+    "assets": {
+      "reel": "/companions/mira/mira-reel.png",
+      "neutral": "/companions/mira/mira-neutral.png",
+      "warm": "/companions/mira/mira-warm.png",
+      "curious": "/companions/mira/mira-curious.png",
+      "closer": "/companions/mira/mira-closer.png",
+      "finalChat": "/companions/mira/mira-final-chat.png",
+      "desktop": {
+        "neutral": "/companions/mira/desktop/mira-neutral-desktop.png",
+        "warm": "/companions/mira/desktop/mira-warm-desktop.png",
+        "curious": "/companions/mira/desktop/mira-curious-desktop.png",
+        "closer": "/companions/mira/desktop/mira-closer-desktop.png",
+        "finalChat": "/companions/mira/desktop/mira-final-chat-desktop.png"
+      },
+      "thumbnails": {
+        "neutral": "/companions/mira/thumbnails/mira-neutral-thumb.png",
+        "warm": "/companions/mira/thumbnails/mira-warm-thumb.png",
+        "curious": "/companions/mira/thumbnails/mira-curious-thumb.png",
+        "closer": "/companions/mira/thumbnails/mira-closer-thumb.png",
+        "finalChat": "/companions/mira/thumbnails/mira-final-chat-thumb.png"
+      }
+    },
+    "faceSafe": { "topPct": 8, "heightPct": 38 },
+    "ranking": {
+      "morning": 0.5,
+      "afternoon": 0.6,
+      "evening": 0.8,
+      "night": 0.95,
+      "queryAffinity": ["city", "guide", "night", "direct", "mysterious", "sharp", "stranger"]
+    },
+    "tags": {
+      "vibe": ["sharp", "mysterious"],
+      "role": ["mentor", "storyteller"],
+      "energy": ["intense", "grounded"],
+      "pace": ["immediate", "reflective"],
+      "format": ["text-first"],
+      "boundaries": ["practical", "supportive"]
+    },
+    "traitTags": ["direct", "knowing", "unromantic"],
+    "sampleLines": [
+      "Hey. Long walk or short one?",
+      "Hi. What's actually on your mind tonight?",
+      "Hey. Tell me what you're carrying, then we'll figure out where to put it down."
+    ],
+    "voice": "curious",
+    "voiceDescribedAs": "direct, low, a little wry",
+    "openers": {
+      "browse": "Hey. You found the night version of me. Where to?",
+      "match": "Hi. Wanted someone who'll walk with you, not fix it — got it. So what street are we on?",
+      "create": "Hey. You wanted someone who knows where they're going — got it. What's the question, actually?"
+    },
+    "rationale": {
+      "look": "She doesn't perform pretty — she looks like someone you'd follow into the alley.",
+      "voice": "She asks the question you were avoiding.",
+      "energy": "Steady. The kind of steady you can lean on without being held up."
+    },
+    "responses": [
+      "Mm. Then keep going. That's the real story.",
+      "Slow down. What did you mean by that, exactly?",
+      "Okay. That's the question. So — what would you do if no one was watching?"
+    ],
+    "suggestedReplies": ["Walk me through it", "Don't really know", "Ask me anything"]
+  },
+  {
+    "id": "sasha",
+    "name": "Sasha",
+    "premise": "Cares about the long version.",
+    "energy": "confidant",
+    "scene": "At a desk, late lamp light, glancing up",
+    "reelSlot": 4,
+    "assets": {
+      "reel": "/companions/sasha/sasha-reel.png",
+      "neutral": "/companions/sasha/sasha-neutral.png",
+      "warm": "/companions/sasha/sasha-warm.png",
+      "curious": "/companions/sasha/sasha-curious.png",
+      "closer": "/companions/sasha/sasha-closer.png",
+      "finalChat": "/companions/sasha/sasha-final-chat.png"
+    },
+    "faceSafe": { "topPct": 6, "heightPct": 42 },
+    "ranking": {
+      "morning": 0.7,
+      "afternoon": 0.75,
+      "evening": 0.85,
+      "night": 0.9,
+      "queryAffinity": ["long", "thoughtful", "confidant", "deep", "studious", "patient", "writer"]
+    },
+    "tags": {
+      "vibe": ["grounded", "calm"],
+      "role": ["confidant", "mentor"],
+      "energy": ["gentle", "intense"],
+      "pace": ["reflective", "slow"],
+      "format": ["long replies"],
+      "boundaries": ["supportive", "practical"]
+    },
+    "traitTags": ["thorough", "patient", "steady"],
+    "sampleLines": [
+      "Hey. Tell me the long version. I have time.",
+      "Hi. What's the part of it you've been chewing on?",
+      "Hey. Where did the thread of it start?"
+    ],
+    "voice": "curious",
+    "voiceDescribedAs": "considered, low, careful",
+    "openers": {
+      "browse": "Hey. You came in looking for the long version — I can do that. Start anywhere.",
+      "match": "Hi. Patient, deep, no rush — got it. So what's the part you've been chewing on?",
+      "create": "Hey. You wanted someone who'd sit with the long version — got it. What's first?"
+    },
+    "rationale": {
+      "look": "Reads like someone who's been listening to you for a while already.",
+      "voice": "Picks up the threads you set down half a sentence ago.",
+      "energy": "Doesn't drift. Doesn't push. Just stays with it."
+    },
+    "responses": [
+      "Mm. Keep going. Don't summarize.",
+      "Okay. And what surprised you about that?",
+      "Wait — say that one again, slower. I want to hear it."
+    ],
+    "suggestedReplies": ["The long version", "Where do I start", "Not sure"]
+  }
+]

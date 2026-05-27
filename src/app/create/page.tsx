@@ -1,5 +1,6 @@
-import { FunnelEntry } from "@/components/funnel-entry";
+import { CreateFunnel } from "@/components/create/create-funnel";
+import { companions } from "@/lib/companions";
 
 export default function CreatePage() {
-  return <FunnelEntry initialStage="specific" />;
+  return <CreateFunnel companions={companions} />;
 }
