@@ -1,10 +1,8 @@
 import { test, expect, type Page, type TestInfo } from "@playwright/test";
 
 /**
- * Visual screenshot suite. Each test navigates to a route, optionally drives a
- * specific interaction state, and saves a full-page PNG into
- * `test-results/screenshots/<project>/`. The goal is reviewable artifacts, not
- * pixel-diff regression — assertions are limited to "page rendered".
+ * Visual screenshot suite. The assertions only confirm that the intended state
+ * rendered; the PNGs in test-results/screenshots are the review artifact.
  */
 
 const SETTLE_MS = 700;
@@ -23,87 +21,110 @@ async function snapshot(page: Page, info: TestInfo, name: string) {
   });
 }
 
-test.describe("entry page", () => {
-  test("idle hero", async ({ page }, info) => {
+test.describe("portrait-first funnel", () => {
+  test("entry shell", async ({ page }, info) => {
     await page.goto("/");
     await expect(
-      page.getByRole("heading", { name: /Hey\. Who do you want to meet\?/i }),
+      page.getByText("Hey. What kind of company would feel good right now?"),
     ).toBeVisible();
-    await snapshot(page, info, "01-entry-idle");
+    await expect(
+      page.getByRole("button", { name: /I'm waiting for someone else/i }),
+    ).toBeVisible();
+    await snapshot(page, info, "01-entry-shell");
   });
 
-  test("browse choice hovered", async ({ page }, info) => {
-    test.skip(info.project.name !== "desktop", "hover preview is desktop-only");
+  test("quick match reveal", async ({ page }, info) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /choose someone for me/i }).click();
+    await page.getByRole("button", { name: /^calmer$/i }).click();
+    await page.getByRole("button", { name: /^listen$/i }).click();
+    await page.getByRole("button", { name: /^pressure$/i }).click();
+
+    await expect(page.getByText(/I think you should meet/i)).toBeVisible();
+    await snapshot(page, info, "02-match-reveal");
+  });
+
+  test("specific companion preview", async ({ page }, info) => {
     await page.goto("/");
     await page
-      .getByRole("button", { name: /Just looking around/i })
-      .hover();
-    await snapshot(page, info, "02-entry-hover-browse");
+      .getByRole("button", { name: /I'm waiting for someone else/i })
+      .click();
+    await page.getByRole("button", { name: /^warmth$/i }).click();
+    await page.getByRole("button", { name: /^mentor$/i }).click();
+    await page.getByRole("button", { name: /No fixing/i }).click();
+    await page.getByRole("button", { name: /^slow$/i }).click();
+    await page.getByRole("button", { name: /^no fixing$/i }).click();
+    await page.getByRole("button", { name: /^after work$/i }).click();
+    await page.getByRole("button", { name: /^warm apartment$/i }).click();
+    await page.getByRole("button", { name: /^Noa$/i }).click();
+
+    await expect(page.getByText("Noa is ready to say hello.")).toBeVisible();
+    await snapshot(page, info, "03-specific-preview");
   });
 
-  test("match choice hovered", async ({ page }, info) => {
-    test.skip(info.project.name !== "desktop", "hover preview is desktop-only");
+  test("back preserves earlier answers", async ({ page }, info) => {
     await page.goto("/");
-    await page
-      .getByRole("button", { name: /Match me with someone/i })
-      .hover();
-    await snapshot(page, info, "03-entry-hover-match");
+    await page.getByRole("button", { name: /choose someone for me/i }).click();
+    await page.getByRole("button", { name: /^calmer$/i }).click();
+    await page.getByLabel("Go back").click();
+
+    await expect(
+      page.getByText("When they answer, what should you feel?"),
+    ).toBeVisible();
+    await expect(page.getByText("choose someone for me")).toBeVisible();
+    await snapshot(page, info, "03b-back-preserves-context");
   });
 
-  test("create choice hovered", async ({ page }, info) => {
-    test.skip(info.project.name !== "desktop", "hover preview is desktop-only");
+  test("session survives refresh", async ({ page }, info) => {
     await page.goto("/");
-    await page
-      .getByRole("button", { name: /I have someone in mind/i })
-      .hover();
-    await snapshot(page, info, "04-entry-hover-create");
+    await page.getByRole("button", { name: /stay with you/i }).click();
+    await expect(page.getByText(/What feels easy to say first/i)).toBeVisible();
+
+    await page.reload();
+    await expect(page.getByText(/What feels easy to say first/i)).toBeVisible();
+    await snapshot(page, info, "03c-session-refresh");
   });
 
-  test("keyboard focus on first choice", async ({ page }, info) => {
-    test.skip(info.project.name !== "desktop", "focus preview is desktop-only");
+  test("first chat continuation gate", async ({ page }, info) => {
     await page.goto("/");
-    await page
-      .getByRole("button", { name: /Just looking around/i })
-      .focus();
-    await snapshot(page, info, "05-entry-focus-browse");
-  });
-});
+    await page.getByRole("button", { name: /stay with you/i }).click();
+    await page.getByRole("button", { name: /tell me about your day/i }).click();
+    await page.getByRole("button", { name: /keep talking/i }).click();
 
-test.describe("downstream routes", () => {
-  test("browse grid", async ({ page }, info) => {
+    await expect(page.getByText(/Keep talking with Mira/i)).toBeVisible();
+    await snapshot(page, info, "04-preview-paywall");
+  });
+
+  test("paywall restore error", async ({ page }, info) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /stay with you/i }).click();
+    await page.getByRole("button", { name: /tell me about your day/i }).click();
+    await page.getByRole("button", { name: /keep talking/i }).click();
+    await page.getByRole("button", { name: /restore access/i }).click();
+
+    await expect(
+      page.getByText("That did not go through. Nothing changed."),
+    ).toBeVisible();
+    await snapshot(page, info, "04b-paywall-error");
+  });
+
+  test("browse best-fit fallback", async ({ page }, info) => {
+    test.skip(info.project.name !== "desktop", "desktop panel includes search");
     await page.goto("/browse");
-    await snapshot(page, info, "10-browse");
+    await page.getByRole("button", { name: /^calm$/i }).click();
+    await page.getByLabel("Search companions").fill("zzznotreal");
+
+    await expect(
+      page.getByText("I found a few that feel close."),
+    ).toBeVisible();
+    await snapshot(page, info, "05-browse-fallback");
   });
 
-  test("browse with tag filter", async ({ page }, info) => {
-    await page.goto("/browse");
-    await page.getByRole("button", { name: /^cozy$/i }).click();
-    await snapshot(page, info, "10b-browse-filtered");
-  });
-
-  test("browse empty state", async ({ page }, info) => {
-    await page.goto("/browse");
-    await page.getByPlaceholder(/search names/i).fill("zzznotreal");
-    await snapshot(page, info, "10c-browse-empty");
-  });
-
-  test("character detail (iris)", async ({ page }, info) => {
-    await page.goto("/c/iris");
-    await snapshot(page, info, "11-character-iris");
-  });
-
-  test("match flow", async ({ page }, info) => {
-    await page.goto("/match");
-    await snapshot(page, info, "12-match");
-  });
-
-  test("create flow", async ({ page }, info) => {
-    await page.goto("/create");
-    await snapshot(page, info, "13-create");
-  });
-
-  test("chat with iris", async ({ page }, info) => {
+  test("direct chat route", async ({ page }, info) => {
     await page.goto("/chat/iris");
-    await snapshot(page, info, "14-chat-iris");
+    await expect(
+      page.getByText(/You found me through the quiet ones/i),
+    ).toBeVisible();
+    await snapshot(page, info, "06-direct-chat");
   });
 });
