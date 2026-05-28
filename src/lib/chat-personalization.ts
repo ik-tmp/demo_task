@@ -1,33 +1,29 @@
 import type { Companion } from "@/types/companion";
-import type { DialogueBeat, Source } from "@/types/dialogue";
-import type {
-  BrowsePersonalization,
-  CreatePersonalization,
-  MatchPersonalization,
-  NameMode,
-} from "@/types/session";
+import type { DialogueBeat } from "@/types/dialogue";
+import type { NameMode } from "@/types/session";
 
 type PersonalizeContext = {
   companion: Companion;
-  source: Source;
   displayName: string | null;
   nameMode: NameMode | null;
   helloContext: string | null;
-  match: MatchPersonalization | null;
-  create: CreatePersonalization | null;
-  browse: BrowsePersonalization | null;
 };
 
+/**
+ * Lightly personalizes a scripted opening without prepending a robotic
+ * summary. The name is woven into the opening's own greeting, and the
+ * hello-context is reflected back in the companion's voice as a genuine
+ * beat — never echoed verbatim as a receipt.
+ */
 export function personalizeStartBeat(
   beat: DialogueBeat,
-  context: PersonalizeContext,
+  { companion, displayName, nameMode, helloContext }: PersonalizeContext,
 ): DialogueBeat {
-  const intro = composePersonalizedIntro(context);
-  if (!intro) return beat;
-  return {
-    ...beat,
-    lines: [intro, ...beat.lines],
-  };
+  const [first, ...rest] = beat.lines;
+  const named = addressByName(first, displayName, nameMode);
+  const reflection = reflectContext(helloContext, companion.energy);
+  const lines = reflection ? [named, reflection, ...rest] : [named, ...rest];
+  return { ...beat, lines };
 }
 
 export function cleanName(value: string): string {
@@ -35,102 +31,64 @@ export function cleanName(value: string): string {
   return trimmed.length > 32 ? `${trimmed.slice(0, 29)}...` : trimmed;
 }
 
-function composePersonalizedIntro({
-  companion,
-  source,
-  displayName,
-  nameMode,
-  helloContext,
-  match,
-  create,
-  browse,
-}: PersonalizeContext): string | null {
-  const greeting = greetingFor(displayName, nameMode);
-  const sourceLine = sourceSummary(source, companion, { match, create, browse });
-  const contextLine = helloContext ? `I'll keep this in mind: ${trimSentence(helloContext)}` : "";
-  return [greeting, sourceLine, contextLine].filter(Boolean).join(" ");
-}
-
-function greetingFor(displayName: string | null, nameMode: NameMode | null): string {
-  if (nameMode === "unnamed") return "No names yet.";
-  if (displayName) return `Hey ${displayName}.`;
-  return "Hey.";
-}
-
-function sourceSummary(
-  source: Source,
-  companion: Companion,
-  session: {
-    match: MatchPersonalization | null;
-    create: CreatePersonalization | null;
-    browse: BrowsePersonalization | null;
-  },
+// Swap the opening's leading greeting ("Hey." / "Hi." / "Hey, you.") for one
+// that uses the name, so there's no doubled "Hey." preamble.
+function addressByName(
+  line: string,
+  displayName: string | null,
+  nameMode: NameMode | null,
 ): string {
-  if (source === "match") {
-    const freeText = firstFreeText(session.match?.freeText);
-    const signals = [
-      freeText ? `"${truncate(freeText, 36)}"` : session.match?.feeling,
-      session.match?.texture,
-      session.match?.avoid?.[0],
-    ].filter(Boolean);
-    if (signals.length > 0) return `You asked for ${joinNatural(signals)}.`;
-    return "You asked me to pick carefully.";
-  }
-
-  if (source === "create") {
-    const createdName = session.create?.companionName ?? companion.name;
-    const signals = [
-      ...(session.create?.feelings ?? []).slice(0, 2),
-      session.create?.role,
-      session.create?.boundaries,
-    ].filter(Boolean);
-    if (signals.length > 0) {
-      return `You shaped ${createdName} around ${joinNatural(signals)}.`;
-    }
-    return `You shaped ${createdName} before this hello.`;
-  }
-
-  if (source === "browse") {
-    const askedFor = [
-      session.browse?.query ? `"${session.browse.query}"` : undefined,
-      ...(session.browse?.refinements ?? []),
-    ].filter(Boolean);
-    if (askedFor.length > 0) {
-      return `You stopped on ${companion.name} after asking for ${joinNatural(askedFor)}.`;
-    }
-    if (session.browse?.previewQuestion) {
-      return `You already asked one thing: "${truncate(session.browse.previewQuestion, 44)}."`;
-    }
-    return `You stopped on ${companion.name}.`;
-  }
-
-  return "I will keep the first hello simple.";
+  if (!displayName || nameMode === "unnamed") return line;
+  return line.replace(
+    /^(Hey|Hi)(?:,?\s*you)?\.\s+/,
+    (_match, greeting: string) => `${greeting}, ${displayName}. `,
+  );
 }
 
-function firstFreeText(
-  freeText?: MatchPersonalization["freeText"],
-): string | undefined {
-  if (!freeText) return undefined;
-  for (const value of Object.values(freeText)) {
-    const trimmed = value?.trim();
-    if (trimmed) return trimmed;
-  }
-  return undefined;
+type Mood = "heavy" | "light" | "curious" | "custom";
+
+function reflectContext(
+  helloContext: string | null,
+  energy: Companion["energy"],
+): string | null {
+  if (!helloContext?.trim()) return null;
+  return reflections[energy][moodOf(helloContext)];
 }
 
-function joinNatural(values: Array<string | undefined>): string {
-  const clean = values.filter((value): value is string => Boolean(value));
-  if (clean.length <= 1) return clean[0] ?? "";
-  if (clean.length === 2) return `${clean[0]} and ${clean[1]}`;
-  return `${clean.slice(0, -1).join(", ")}, and ${clean[clean.length - 1]}`;
+function moodOf(context: string): Mood {
+  const c = context.toLowerCase();
+  if (/(long day|tired|rough|hard|heavy|exhaust|a lot)/.test(c)) return "heavy";
+  if (/(light|easy|breezy|keep it light|fun|simple)/.test(c)) return "light";
+  if (/(curious|feeling this out|explore|just looking|see what|checking)/.test(c))
+    return "curious";
+  return "custom";
 }
 
-function trimSentence(value: string): string {
-  const trimmed = truncate(value.trim(), 74);
-  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
-}
-
-function truncate(value: string, maxLength: number): string {
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, maxLength - 3)}...`;
-}
+// In-voice reflections, keyed by companion energy. The opener portrait is
+// "warm" for everyone, so each stays in its softer register.
+const reflections: Record<Companion["energy"], Record<Mood, string>> = {
+  listener: {
+    heavy: "A long one, then. Okay — no rush in here. We'll take it slow.",
+    light: "Light it is. I'll keep my questions soft.",
+    curious: "Just feeling it out — that's a fine reason to be here.",
+    custom: "Thanks for telling me that first. I'll hold it gently.",
+  },
+  provoker: {
+    heavy: "Rough one, huh. Don't worry, I won't make you perform cheerful.",
+    light: "Light? I can keep it breezy. For a while, anyway.",
+    curious: "Just poking around. Respect — I'll behave. Mostly.",
+    custom: "Noted. I'll pretend I'm being subtle about it.",
+  },
+  guide: {
+    heavy: "Heavy day. Fine — we don't have to make it tidy.",
+    light: "Light, then. We'll keep the pace easy.",
+    curious: "Curious. Good — that's the honest way to start anything.",
+    custom: "Got it. I'll keep that in view without circling it.",
+  },
+  confidant: {
+    heavy: "A long day. Then let's not rush a single part of it.",
+    light: "We can keep it light to start. I'll follow your lead.",
+    curious: "Just curious — that's allowed. We can go as slow as you like.",
+    custom: "Thank you for saying that first. We'll let it sit while we talk.",
+  },
+};

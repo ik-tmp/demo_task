@@ -33,13 +33,13 @@ Do not add a backend, auth, account persistence, analytics, real payments, real 
 The codebase now has Direction B surfaces:
 
 - `/` renders the reel.
-- `/gallery` renders the full-screen gallery.
+- `/gallery` renders the hero + grid gallery (best-fit hero, companion tiles, a create tile, and locked placeholder tiles behind the mock paywall).
 - `/companion/[id]` renders a browse/vignette funnel.
 - `/match` renders quick match.
 - `/create` renders the create funnel.
 - `/chat/[id]` renders first preview chat and the mock paywall.
 
-Treat the old route-first browse/match/create assumptions as retired. Do not reintroduce `/browse`, `/c/[id]`, route-tab navigation, marketplace grids, or a default-companion landing screen unless the product direction changes.
+Treat the old route-first browse/match/create assumptions as retired. Do not reintroduce `/browse`, `/c/[id]`, route-tab navigation, or a default-companion landing screen unless the product direction changes. The gallery is intentionally a hero + grid (see `docs/DIRECTION-B.md` §6); this is not a route-first marketplace and the reel remains the cold open.
 
 ## Stack
 

@@ -45,9 +45,6 @@ export function FirstChat({ companion }: FirstChatProps) {
   const displayName = useFunnelStore((state) => state.displayName);
   const nameMode = useFunnelStore((state) => state.nameMode);
   const helloContext = useFunnelStore((state) => state.helloContext);
-  const matchPersonalization = useFunnelStore((state) => state.match);
-  const createPersonalization = useFunnelStore((state) => state.create);
-  const browsePersonalization = useFunnelStore((state) => state.browse);
   const setDisplayName = useFunnelStore((state) => state.setDisplayName);
   const setHelloContext = useFunnelStore((state) => state.setHelloContext);
   const sourceParam = searchParams.get("from");
@@ -68,26 +65,12 @@ export function FirstChat({ companion }: FirstChatProps) {
       start
         ? personalizeStartBeat(start, {
             companion,
-            source,
             displayName,
             nameMode,
             helloContext,
-            match: matchPersonalization,
-            create: createPersonalization,
-            browse: browsePersonalization,
           })
         : null,
-    [
-      start,
-      companion,
-      source,
-      displayName,
-      nameMode,
-      helloContext,
-      matchPersonalization,
-      createPersonalization,
-      browsePersonalization,
-    ],
+    [start, companion, displayName, nameMode, helloContext],
   );
   const preludeStep = resolvePreludeStep(hasHydrated, displayName, helloContext);
   const [beat, setBeat] = useState<DialogueBeat | null>(null);
@@ -346,16 +329,18 @@ export function FirstChat({ companion }: FirstChatProps) {
         </div>
 
         {showReplies ? (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap justify-end gap-1.5">
             {beat!.replies!.map((r) => (
               <button
                 key={r.next + r.label}
                 type="button"
                 data-suggested-reply
                 onClick={() => chooseReply(r.next, r.said ?? r.label)}
-                className="rounded-pill border border-line bg-copy/6 px-3 py-1 text-[12.5px] text-copy-muted transition hover:bg-copy/12 hover:text-copy"
+                className="group rounded-pill border border-copy/30 bg-transparent px-3.5 py-1.5 text-[13px] transition hover:border-copy hover:bg-copy active:bg-copy"
               >
-                {r.label}
+                <span className="text-copy transition-colors group-hover:text-ink group-active:text-ink">
+                  {r.label}
+                </span>
               </button>
             ))}
           </div>

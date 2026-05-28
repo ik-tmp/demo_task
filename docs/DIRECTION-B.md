@@ -108,14 +108,23 @@ Browse users should not be forced through a long interview.
 
 ### Gallery
 
-The gallery is a full-screen discovery surface, not a card grid.
+The gallery is a hero + grid discovery surface.
 
-- Each active companion is presented as a large vignette.
+- The top-ranked companion is presented as a large best-fit hero vignette.
+- The remaining companions fill a portrait-tile grid below the hero.
+- A dedicated "create your own" tile in the grid routes to `/create` and is the
+  one tile that reads as an action rather than a face.
+- A few locked placeholder tiles sit behind the mock paywall as the rest of the
+  cast (portraits generated later). Tapping a locked tile opens the paywall in
+  its "unlock the full cast" framing.
+- Locked placeholders live in `src/data/gallery-placeholders.ts`, kept out of
+  `companions.json` so they never enter reel/match/create ranking.
 - Search accepts natural phrases and maps them to tags deterministically.
-- Refinement chips reorder results rather than filtering them out.
+- Refinement chips reorder results (and the hero) rather than filtering them out.
 - Active refinements persist as removable pills.
-- The gallery never empties. If a query is restrictive, show the closest fit.
-- Any companion can route to `/chat/[id]?from=browse`.
+- The gallery never empties. If a query is restrictive, the hero shows the
+  closest fit.
+- Any active companion can route to `/chat/[id]?from=browse`.
 
 ## 7. Quick Match
 

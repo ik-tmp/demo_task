@@ -52,10 +52,19 @@ export const surfaceDialogue = {
     searchPlaceholder: "Describe who you want to talk to.",
     searchAria: "Search companions",
     submit: "search",
-    previousAria: "previous",
-    nextAria: "next",
     why: (reason: string) => `You asked for ${reason}. This is the closest match.`,
+    bestFit: "best fit",
     sayHi: (name: string) => `say hi to ${name}`,
+    restLabel: "everyone else",
+    createTile: {
+      title: "Create your own",
+      hint: "Describe anyone. We'll build them.",
+    },
+    lockedTile: {
+      badge: "soon",
+      cta: "Unlock the full cast",
+      lockedAria: (name: string) => `${name} — locked, unlock the full cast`,
+    },
   },
 
   chat: {
@@ -88,6 +97,11 @@ export const surfaceDialogue = {
     eyebrow: "Preview ended",
     title: (name: string) => `Keep talking with ${name}`,
     body: "Unlimited messages, voice, and memory.",
+    lockedCast: {
+      eyebrow: "Members only",
+      title: "Unlock the full cast",
+      body: "New companions, unlimited messages, voice, and memory.",
+    },
     plans: [
       { id: "monthly", name: "Monthly", perMonth: "$12/mo", billed: "billed monthly", save: null, best: null },
       { id: "quarter", name: "3 months", perMonth: "$10/mo", billed: "$30 every 3 months", save: "Save 17%", best: null },

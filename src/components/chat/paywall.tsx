@@ -7,6 +7,7 @@ import { surfaceDialogue } from "@/data/surface-dialogue";
 import { cn } from "@/lib/utils";
 
 export type PaywallStatus = "hidden" | "open" | "dismissed" | "success";
+export type PaywallVariant = "preview" | "lockedCast";
 
 const paywallCopy = surfaceDialogue.paywall;
 type PlanId = (typeof paywallCopy.plans)[number]["id"];
@@ -16,6 +17,7 @@ type PaywallProps = {
   companionName: string;
   onContinue: () => void;
   onDismiss: () => void;
+  variant?: PaywallVariant;
 };
 
 /**
@@ -30,7 +32,13 @@ type PaywallProps = {
  * transcript behind it is blurred by the caller. It never appears during
  * the funnel, only in first chat after the preview is spent.
  */
-export function Paywall({ status, companionName, onContinue, onDismiss }: PaywallProps) {
+export function Paywall({
+  status,
+  companionName,
+  onContinue,
+  onDismiss,
+  variant = "preview",
+}: PaywallProps) {
   if (status === "hidden") return null;
 
   return (
@@ -50,6 +58,7 @@ export function Paywall({ status, companionName, onContinue, onDismiss }: Paywal
           {status === "open" ? (
             <OpenBody
               companionName={companionName}
+              variant={variant}
               onContinue={onContinue}
               onDismiss={onDismiss}
             />
@@ -64,14 +73,24 @@ export function Paywall({ status, companionName, onContinue, onDismiss }: Paywal
 
 function OpenBody({
   companionName,
+  variant,
   onContinue,
   onDismiss,
 }: {
   companionName: string;
+  variant: PaywallVariant;
   onContinue: () => void;
   onDismiss: () => void;
 }) {
   const [selected, setSelected] = useState<PlanId>(paywallCopy.defaultPlan);
+  const header =
+    variant === "lockedCast"
+      ? paywallCopy.lockedCast
+      : {
+          eyebrow: paywallCopy.eyebrow,
+          title: paywallCopy.title(companionName),
+          body: paywallCopy.body,
+        };
 
   return (
     <div className="flex flex-col gap-3.5">
@@ -81,7 +100,7 @@ function OpenBody({
             <Lock size={15} />
           </span>
           <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-coral">
-            {paywallCopy.eyebrow}
+            {header.eyebrow}
           </span>
         </div>
         <button
@@ -96,9 +115,9 @@ function OpenBody({
 
       <div>
         <p className="font-serif text-[21px] leading-tight text-copy">
-          {paywallCopy.title(companionName)}
+          {header.title}
         </p>
-        <p className="mt-1.5 text-[13.5px] text-copy-muted">{paywallCopy.body}</p>
+        <p className="mt-1.5 text-[13.5px] text-copy-muted">{header.body}</p>
       </div>
 
       <div className="flex flex-col gap-2">

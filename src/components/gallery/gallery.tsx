@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Lock, MessageCircle, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { surfaceDialogue } from "@/data/surface-dialogue";
-import { cn } from "@/lib/utils";
+import { galleryPlaceholders } from "@/data/gallery-placeholders";
+import { motionSec } from "@/lib/motion";
 import { useFunnelStore } from "@/store/funnel-store";
 import type { Companion } from "@/types/companion";
 import {
@@ -17,7 +18,7 @@ import {
   rankForGallery,
   refinementLabels,
 } from "@/lib/browse";
-import { Pill } from "@/components/funnel/pill";
+import { Paywall, type PaywallStatus } from "@/components/chat/paywall";
 
 const refinementIds: RefinementId[] = [
   "softer",
@@ -40,16 +41,18 @@ export function Gallery({ companions }: GalleryProps) {
   const setBrowsePersonalization = useFunnelStore(
     (state) => state.setBrowsePersonalization,
   );
-  const initialRefinements = useMemo(() => {
+  // Refinements are still accepted as deep-link params (e.g. /gallery?softer=1)
+  // and silently affect ranking, but there are no on-screen refinement chips.
+  const refinements = useMemo(() => {
     const acc: RefinementId[] = [];
     for (const r of refinementIds) if (searchParams.get(r) === "1") acc.push(r);
     return acc;
   }, [searchParams]);
 
-  const [refinements, setRefinements] = useState<RefinementId[]>(initialRefinements);
   const [query, setQuery] = useState("");
-  const [activeIndex, setActiveIndex] = useState(0);
   const [textInput, setTextInput] = useState("");
+  const [paywall, setPaywall] = useState<PaywallStatus>("hidden");
+  const [lockedName, setLockedName] = useState<string>("");
 
   const filters = useMemo<GalleryFilters>(
     () => ({ refinements, query }),
@@ -59,139 +62,112 @@ export function Gallery({ companions }: GalleryProps) {
     () => rankForGallery(companions, filters),
     [companions, filters],
   );
-  const active = results[activeIndex] ?? results[0];
 
-  // Reset active index when filters change. Tracked via a key ref so the
-  // setState isn't called on every render.
-  const lastFilterKey = useRef<string>("");
-  const filterKey = `${refinements.join(",")}|${query}`;
-  useEffect(() => {
-    if (lastFilterKey.current === filterKey) return;
-    lastFilterKey.current = filterKey;
-    setActiveIndex(0);
-  }, [filterKey]);
-
-  const toggleRefinement = (id: RefinementId) => {
-    setRefinements((cur) =>
-      cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id],
-    );
-  };
+  // The gallery never empties (DIRECTION-B §6): the top-ranked companion is
+  // always the hero, the rest fill the grid.
+  const hero = results[0].companion;
+  const rest = results.slice(1).map((r) => r.companion);
 
   const submitQuery = (e: React.FormEvent) => {
     e.preventDefault();
     setQuery(textInput.trim());
   };
 
-  const goPrev = () => setActiveIndex((i) => (i - 1 + results.length) % results.length);
-  const goNext = () => setActiveIndex((i) => (i + 1) % results.length);
-
   const why = describeActiveFilters(filters);
-  const sayHi = () => {
+
+  const meet = (companion: Companion) => {
     setBrowsePersonalization({
-      companionId: active.companion.id,
-      companionName: active.companion.name,
+      companionId: companion.id,
+      companionName: companion.name,
       query: query || undefined,
       refinements: refinements.map((id) => refinementLabels[id]),
     });
-    router.push(`/chat/${active.companion.id}?from=browse`);
+    router.push(`/chat/${companion.id}?from=browse`);
+  };
+
+  const openPaywall = (name: string) => {
+    setLockedName(name);
+    setPaywall("open");
+  };
+  const closePaywall = () => setPaywall("hidden");
+  const unlockPaywall = () => {
+    setPaywall("success");
+    window.setTimeout(closePaywall, 1500);
   };
 
   return (
-    <main className="relative h-[100dvh] w-full overflow-hidden bg-ink-deep text-copy">
-      <div className="absolute inset-0 grid grid-rows-[auto_1fr_auto]">
-        {/* Top bar */}
-        <div className="flex items-center justify-between gap-3 border-b border-line/40 bg-ink-deep/85 px-5 py-3 backdrop-blur">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-[13px] text-copy-muted transition hover:text-copy"
+    <main className="relative h-[100dvh] w-full overflow-y-auto bg-ink-deep text-copy">
+      {/* Top bar */}
+      <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-line/40 bg-ink-deep/85 px-5 py-3 backdrop-blur">
+        <Link
+          href="/"
+          aria-label={galleryCopy.back}
+          className="-ml-1 inline-flex shrink-0 items-center rounded-pill p-1.5 text-copy-muted transition hover:text-copy"
+        >
+          <ArrowLeft size={16} />
+        </Link>
+        <form onSubmit={submitQuery} className="flex flex-1 items-center gap-2">
+          <input
+            type="text"
+            value={textInput}
+            onChange={(e) => setTextInput(e.target.value)}
+            placeholder={galleryCopy.searchPlaceholder}
+            aria-label={galleryCopy.searchAria}
+            className="min-w-0 flex-1 rounded-pill border border-line bg-copy/5 px-4 py-1.5 text-[13px] text-copy placeholder:text-copy-faint focus:border-copy/35 focus:outline-none"
+          />
+          <button
+            type="submit"
+            className="shrink-0 rounded-pill border border-line bg-copy/8 px-3 py-1.5 text-[13px] text-copy transition hover:bg-copy/14"
           >
-            <ArrowLeft size={14} />
-            {galleryCopy.back}
-          </Link>
-          <form onSubmit={submitQuery} className="flex flex-1 max-w-md items-center gap-2">
-            <input
-              type="text"
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              placeholder={galleryCopy.searchPlaceholder}
-              aria-label={galleryCopy.searchAria}
-              className="flex-1 rounded-pill border border-line bg-copy/5 px-4 py-1.5 text-[13px] text-copy placeholder:text-copy-faint focus:border-copy/35 focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="rounded-pill border border-line bg-copy/8 px-3 py-1.5 text-[13px] text-copy transition hover:bg-copy/14"
-            >
-              {galleryCopy.submit}
-            </button>
-          </form>
-          <span className="hidden text-[12px] text-copy-faint md:inline">
-            {activeIndex + 1} / {results.length}
-          </span>
-        </div>
+            {galleryCopy.submit}
+          </button>
+        </form>
+      </div>
 
-        {/* Active vignette */}
-        <div className="relative overflow-hidden">
+      {/* Hero — best-fit vignette */}
+      <section className="px-5 pt-4">
+        <div className="relative h-[52vh] min-h-[340px] max-h-[560px] overflow-hidden rounded-tile border border-line/40">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={active.companion.id}
+              key={hero.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
+              transition={{ duration: motionSec(0.35), ease: "easeOut" }}
               className="absolute inset-0"
             >
-              <div className="absolute inset-0">
-                <Image
-                  src={active.companion.assets.reel}
-                  alt={active.companion.name}
-                  fill
-                  sizes="100vw"
-                  className="h-full w-full object-cover"
-                  style={{ objectPosition: "50% 28%" }}
-                  priority
-                />
-                <div
-                  aria-hidden
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      "linear-gradient(180deg, rgba(15,13,22,0.25) 0%, rgba(15,13,22,0) 30%, rgba(15,13,22,0) 50%, rgba(15,13,22,0.85) 100%)",
-                  }}
-                />
-              </div>
-
-              {/* Carousel arrows (desktop) */}
-              <button
-                type="button"
-                onClick={goPrev}
-                aria-label={galleryCopy.previousAria}
-                className="absolute left-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-line bg-ink/55 p-2 text-copy backdrop-blur transition hover:bg-ink/75 md:block"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                type="button"
-                onClick={goNext}
-                aria-label={galleryCopy.nextAria}
-                className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-line bg-ink/55 p-2 text-copy backdrop-blur transition hover:bg-ink/75 md:block"
-              >
-                <ChevronRight size={18} />
-              </button>
-
-              {/* Editorial overlay */}
-              <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-6 sm:px-10">
-                <div className="flex flex-col gap-3 md:max-w-md">
+              <Image
+                src={hero.assets.reel}
+                alt={hero.name}
+                fill
+                sizes="100vw"
+                className="h-full w-full object-cover"
+                style={{ objectPosition: "50% 28%" }}
+                priority
+              />
+              <div
+                aria-hidden
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(15,13,22,0.25) 0%, rgba(15,13,22,0) 30%, rgba(15,13,22,0) 48%, rgba(15,13,22,0.9) 100%)",
+                }}
+              />
+              <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-6 sm:px-8">
+                <div className="flex flex-col gap-2.5 md:max-w-md">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-copy-faint">
+                    {galleryCopy.bestFit}
+                  </span>
                   <div>
-                    <p className="font-serif text-[40px] leading-[1] sm:text-[56px] lg:text-[72px]">
-                      {active.companion.name}
+                    <p className="font-serif text-[40px] leading-[1] sm:text-[52px] lg:text-[64px]">
+                      {hero.name}
                     </p>
                     <p className="mt-1.5 text-[15px] text-copy/85 sm:text-[17px]">
-                      {active.companion.premise}
+                      {hero.premise}
                     </p>
                   </div>
-
                   <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-copy-muted">
-                    {active.companion.traitTags.map((t) => (
+                    {hero.traitTags.map((t) => (
                       <span
                         key={t}
                         className="rounded-pill border border-line/60 bg-copy/[0.06] px-2 py-0.5"
@@ -200,72 +176,176 @@ export function Gallery({ companions }: GalleryProps) {
                       </span>
                     ))}
                   </div>
-
-                  <ul className="space-y-1.5">
-                    {active.companion.sampleLines.slice(0, 3).map((line, i) => (
-                      <li
-                        key={i}
-                        className="rounded-tile border border-line/40 bg-ink/45 px-3 py-2 text-[13px] italic text-copy/85 backdrop-blur sm:text-[14px] md:w-fit md:max-w-full"
-                      >
-                        “{line}”
-                      </li>
-                    ))}
-                  </ul>
-
                   {why ? (
-                    <p className="text-[12px] text-copy-faint">
-                      {galleryCopy.why(why)}
-                    </p>
+                    <p className="text-[12px] text-copy-faint">{galleryCopy.why(why)}</p>
                   ) : null}
-
                   <button
                     type="button"
-                    onClick={sayHi}
-                    className="inline-flex w-fit items-center gap-1.5 rounded-pill bg-coral px-4 py-2 text-[14px] font-semibold text-ink shadow-soft transition hover:bg-rose"
+                    onClick={() => meet(hero)}
+                    className="mt-0.5 inline-flex w-fit items-center gap-1.5 rounded-pill bg-coral px-4 py-2 text-[14px] font-semibold text-ink shadow-soft transition hover:bg-rose"
                   >
-                    <MessageCircle size={14} /> {galleryCopy.sayHi(active.companion.name)}
+                    <MessageCircle size={14} /> {galleryCopy.sayHi(hero.name)}
                   </button>
                 </div>
               </div>
             </motion.div>
           </AnimatePresence>
         </div>
+      </section>
 
-        {/* Bottom: refinement chips + pills */}
-        <div className="flex flex-col gap-2 border-t border-line/40 bg-ink-deep/85 px-5 py-3 backdrop-blur">
-          {refinements.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {refinements.map((r) => (
-                <Pill
-                  key={r}
-                  label={refinementLabels[r]}
-                  onRemove={() => toggleRefinement(r)}
-                />
-              ))}
-            </div>
-          ) : null}
-          <div className="flex flex-wrap gap-1.5">
-            {refinementIds.map((r) => {
-              const selected = refinements.includes(r);
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => toggleRefinement(r)}
-                  className={cn(
-                    "rounded-pill border px-3 py-1 text-[12px] transition",
-                    selected
-                      ? "border-copy bg-copy text-ink"
-                      : "border-line bg-copy/6 text-copy-muted hover:bg-copy/12 hover:text-copy",
-                  )}
-                >
-                  {refinementLabels[r]}
-                </button>
-              );
-            })}
+      {/* Grid — everyone else, create, locked */}
+      <section className="px-5 pb-10 pt-6">
+        <p className="mb-3 text-[12px] font-semibold uppercase tracking-[0.18em] text-copy-faint">
+          {galleryCopy.restLabel}
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {rest.map((c) => (
+            <CompanionTile key={c.id} companion={c} onSelect={() => meet(c)} />
+          ))}
+          <CreateTile />
+          {galleryPlaceholders.map((p) => (
+            <LockedTile
+              key={p.id}
+              name={p.name}
+              vibe={p.vibe}
+              accent={p.accent}
+              onSelect={() => openPaywall(p.name)}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* Locked-cast paywall overlay (mock) */}
+      {paywall !== "hidden" ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-ink-deep/70 p-4 backdrop-blur-sm"
+          onClick={closePaywall}
+        >
+          <div className="w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <Paywall
+              status={paywall}
+              variant="lockedCast"
+              companionName={lockedName}
+              onContinue={unlockPaywall}
+              onDismiss={closePaywall}
+            />
           </div>
         </div>
-      </div>
+      ) : null}
     </main>
+  );
+}
+
+function CompanionTile({
+  companion,
+  onSelect,
+}: {
+  companion: Companion;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-label={galleryCopy.sayHi(companion.name)}
+      className="group relative aspect-video overflow-hidden rounded-tile border border-line/40 text-left transition hover:border-copy/30"
+    >
+      <Image
+        src={companion.assets.reel}
+        alt={companion.name}
+        fill
+        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+      />
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(15,13,22,0) 40%, rgba(15,13,22,0.9) 100%)",
+        }}
+      />
+      <div className="absolute inset-x-0 bottom-0 z-10 p-3.5">
+        <p className="font-serif text-[24px] leading-none">{companion.name}</p>
+        <p className="mt-1 line-clamp-1 text-[12px] text-copy/75">{companion.premise}</p>
+      </div>
+    </button>
+  );
+}
+
+function CreateTile() {
+  const { title, hint } = galleryCopy.createTile;
+  return (
+    <Link
+      href="/create"
+      className="group relative flex aspect-video items-center gap-3.5 overflow-hidden rounded-tile border border-dashed border-coral/45 p-4 transition hover:border-coral/80"
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-70 transition duration-500 group-hover:opacity-100"
+        style={{
+          background:
+            "radial-gradient(120% 90% at 20% 0%, rgba(255,127,110,0.22), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(201,156,255,0.22), transparent 55%)",
+        }}
+      />
+      <span className="relative z-10 grid h-11 w-11 shrink-0 place-items-center rounded-full bg-coral/15 text-coral">
+        <Sparkles size={19} />
+      </span>
+      <span className="relative z-10 min-w-0">
+        <span className="block font-serif text-[22px] leading-tight text-copy">
+          {title}
+        </span>
+        <span className="mt-1 flex items-center gap-1 text-[12.5px] text-copy-muted">
+          {hint}
+          <ArrowRight
+            size={13}
+            className="shrink-0 transition group-hover:translate-x-0.5"
+          />
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+function LockedTile({
+  name,
+  vibe,
+  accent,
+  onSelect,
+}: {
+  name: string;
+  vibe: string;
+  accent: string;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-label={galleryCopy.lockedTile.lockedAria(name)}
+      className="group relative flex aspect-video flex-col justify-between overflow-hidden rounded-tile border border-line/40 p-3.5 text-left transition hover:border-copy/25"
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `radial-gradient(110% 120% at 75% 15%, ${accent}33, transparent 60%), linear-gradient(180deg, #211d2b 0%, #0e0c14 100%)`,
+        }}
+      />
+      <div className="relative z-10 flex items-center justify-between">
+        <span className="grid h-9 w-9 place-items-center rounded-full bg-ink/55 text-copy-muted backdrop-blur">
+          <Lock size={15} />
+        </span>
+        <span className="rounded-pill border border-line/60 bg-ink/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-copy-faint backdrop-blur">
+          {galleryCopy.lockedTile.badge}
+        </span>
+      </div>
+      <span className="relative z-10">
+        <span className="block font-serif text-[22px] leading-tight text-copy/90 blur-[1.5px]">
+          {name}
+        </span>
+        <span className="mt-1 block text-[12px] text-copy-muted">{vibe}</span>
+      </span>
+    </button>
   );
 }

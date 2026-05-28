@@ -171,18 +171,17 @@ function ChatBody({
             type="button"
             onClick={onBack}
             aria-label={commonCopy.back}
-            className="inline-flex items-center gap-1 rounded-pill px-2 py-1 text-[13px] text-copy-muted transition hover:text-copy"
+            className="-ml-1 inline-flex items-center rounded-pill p-1.5 text-copy-muted transition hover:text-copy"
           >
-            <ArrowLeft size={14} />
-            {commonCopy.back}
+            <ArrowLeft size={16} />
           </button>
         ) : (
           <Link
             href="/"
-            className="inline-flex items-center gap-1 rounded-pill px-2 py-1 text-[13px] text-copy-muted transition hover:text-copy"
+            aria-label={commonCopy.reel}
+            className="-ml-1 inline-flex items-center rounded-pill p-1.5 text-copy-muted transition hover:text-copy"
           >
-            <ArrowLeft size={14} />
-            {commonCopy.reel}
+            <ArrowLeft size={16} />
           </Link>
         )}
         {progress ? (

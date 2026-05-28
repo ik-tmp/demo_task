@@ -116,23 +116,59 @@ test.describe("Direction B — M4 Browse", () => {
     await snapshot(page, info, "b-06-vignette-funnel");
   });
 
-  test("gallery renders companions, paging works", async ({ page }, info) => {
+  test("gallery shows best-fit hero, grid, create + locked tiles", async ({ page }, info) => {
     await page.goto("/gallery");
-    await expect(page.locator("p.font-serif").first()).toBeVisible();
-    const nextBtn = page.getByRole("button", { name: "next" });
-    if (await nextBtn.isVisible()) {
-      const firstName = await page.locator("p.font-serif").first().innerText();
-      await nextBtn.click();
-      // Wait for animation to settle so only the new vignette is in DOM.
-      await page.waitForTimeout(600);
-      const secondName = await page.locator("p.font-serif").first().innerText();
-      expect(secondName).not.toBe(firstName);
-    }
+    // Best-fit hero with a say-hi CTA.
+    await expect(page.getByText(/best fit/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: /^say hi to /i }).first()).toBeVisible();
+    // Grid section + the create tile.
+    await expect(page.getByText(/everyone else/i)).toBeVisible();
+    await expect(page.getByRole("link", { name: /create your own/i })).toBeVisible();
     await snapshot(page, info, "b-07-gallery");
+  });
+
+  test("gallery scrolled to bottom shows create + locked tiles", async ({ page }, info) => {
+    await page.goto("/gallery");
+    await expect(page.getByText(/everyone else/i)).toBeVisible();
+    // The grid lives in the gallery's internal scroll container.
+    await page.locator("main").evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+    await page.waitForTimeout(250);
+    await expect(page.getByRole("link", { name: /create your own/i })).toBeVisible();
+    await snapshot(page, info, "b-07c-gallery-bottom");
+  });
+
+  test("locked gallery tile opens the unlock-the-cast paywall", async ({ page }, info) => {
+    await page.goto("/gallery");
+    await page.getByRole("button", { name: /locked, unlock the full cast/i }).first().click();
+    await expect(page.getByText(/unlock the full cast/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: /^unlock unlimited$/i })).toBeVisible();
+    await snapshot(page, info, "b-07b-gallery-locked-paywall");
   });
 });
 
 test.describe("Direction B — M5 First Chat + Paywall", () => {
+  test("opening weaves the name in, reflects context, and offers user-side replies", async ({
+    page,
+  }, info) => {
+    await page.goto("/chat/iris?from=browse");
+    // Give a real name and a heavy mood so the opening shows both the woven
+    // greeting and the in-voice context reflection.
+    await page.getByLabel(/type your name or alias/i).fill("Nox");
+    await page.getByRole("button", { name: /^send$/i }).click();
+    await page.getByRole("button", { name: /^long day$/i }).click();
+
+    // Name is woven into the opening's own greeting — no robotic preamble.
+    await expect(page.getByText(/Hey, Nox\./)).toBeVisible({ timeout: 8000 });
+    // The question lands and the suggested replies become tappable.
+    await expect(page.getByText(/how's your night going so far/i)).toBeVisible({
+      timeout: 8000,
+    });
+    await expect(page.locator("[data-suggested-reply]").first()).toBeVisible();
+    await snapshot(page, info, "b-09b-chat-opening");
+  });
+
   test("paywall surfaces after preview exchanges", async ({ page }, info) => {
     await page.goto("/chat/iris?from=match");
     await answerChatPrelude(page);

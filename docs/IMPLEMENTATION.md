@@ -43,7 +43,7 @@ This document tracks the active Casting Hall implementation described in `docs/D
 - `[x]` Browse path
   - Tapping a reel face opens `VignetteFunnel`.
   - Users can say hi, view sample first messages, ask up to three deterministic preview questions, show softer/sharper, or open the gallery.
-  - Gallery uses full-screen vignette presentation, search, refinement chips, ranking, persistent pills, and best-fit ordering.
+  - Gallery uses a best-fit hero vignette plus a portrait-tile grid, a create tile, and locked placeholder tiles behind the mock paywall, with search, refinement chips, ranking, persistent pills, and best-fit ordering.
 
 - `[x]` Match path
   - Match asks feeling, role, message texture, avoidances, and optional familiarity.
@@ -81,9 +81,8 @@ This document tracks the active Casting Hall implementation described in `docs/D
   - `expectFaceSafeIntact` exists in `tests/e2e/helpers.ts`, but the Direction B specs do not currently call it.
   - Add assertions for reel, funnel, reveal, chat, paywall, and gallery breakpoints.
 
-- `[~]` Gallery mobile behavior
-  - Gallery is full-screen and ranked, but vertical paging/swipe behavior from the spec is not implemented.
-  - Current controls rely on search/chips and desktop arrows.
+- `[~]` Gallery placeholders
+  - Locked placeholder tiles (`src/data/gallery-placeholders.ts`) use gradient stand-ins; real generated portraits still need to be produced and wired in (set `asset`, flip `locked`).
 
 - `[~]` Match branch nuance
   - Dynamic familiarity Q4 exists.
