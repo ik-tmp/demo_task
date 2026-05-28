@@ -136,6 +136,38 @@ export function Reel({ companions }: ReelProps) {
                   <p className="mt-2 max-w-md text-[15px] text-copy/80 sm:text-[17px] md:text-[18px] md:text-copy/90">
                     {current.premise}
                   </p>
+
+                  {/* Desktop: a clear primary CTA + quieter alternates, left-anchored
+                      under the name so the choices read as the point, not footer chrome.
+                      Mobile keeps the centered bottom cluster below. */}
+                  <div className="pointer-events-auto mt-7 hidden flex-col items-start gap-3.5 md:flex">
+                    <button
+                      type="button"
+                      onClick={() => interrupt(() => router.push(`/companion/${current.id}`))}
+                      className={cn(
+                        "rounded-pill bg-copy px-7 py-3 text-[16px] font-medium text-ink shadow-soft transition",
+                        "hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 focus-visible:ring-offset-ink",
+                      )}
+                    >
+                      {reelCopy.actions.talkTo(current.name)}
+                    </button>
+                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[14px]">
+                      <ReelTextAction
+                        onClick={() => interrupt(() => router.push("/gallery"))}
+                        label={reelCopy.actions.seeEveryone}
+                      />
+                      <DesktopSep />
+                      <ReelTextAction
+                        onClick={() => interrupt(() => router.push("/match"))}
+                        label={reelCopy.actions.pickForMe}
+                      />
+                      <DesktopSep />
+                      <ReelTextAction
+                        onClick={() => interrupt(() => router.push("/create"))}
+                        label={reelCopy.actions.describeSomeoneElse}
+                      />
+                    </div>
+                  </div>
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -144,15 +176,17 @@ export function Reel({ companions }: ReelProps) {
           {/* Bottom: host line + dotline + affordances. */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 pb-[max(env(safe-area-inset-bottom),20px)]">
             <div className="pointer-events-auto mx-auto flex max-w-[1600px] flex-col items-center gap-4 px-6 sm:px-10">
-              <p className="text-center text-[14px] text-copy/70 sm:text-[15px]">
+              <p className="text-center text-[14px] text-copy/70 sm:text-[15px] md:hidden">
                 {reelCopy.prompt}
               </p>
               <Dotline count={order.length} active={index} />
-              <Affordances
-                onSeeEveryone={() => interrupt(() => router.push("/gallery"))}
-                onPickForMe={() => interrupt(() => router.push("/match"))}
-                onDescribe={() => interrupt(() => router.push("/create"))}
-              />
+              <div className="md:hidden">
+                <Affordances
+                  onSeeEveryone={() => interrupt(() => router.push("/gallery"))}
+                  onPickForMe={() => interrupt(() => router.push("/match"))}
+                  onDescribe={() => interrupt(() => router.push("/create"))}
+                />
+              </div>
             </div>
           </div>
         </FaceSafeFrame>
@@ -184,6 +218,25 @@ function Affordances({ onSeeEveryone, onPickForMe, onDescribe }: AffordancesProp
 
 function Sep() {
   return <span className="px-1 text-copy/30 md:hidden" aria-hidden>·</span>;
+}
+
+function DesktopSep() {
+  return <span className="text-copy/25" aria-hidden>·</span>;
+}
+
+function ReelTextAction({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-pill px-1 text-copy/65 transition hover:text-copy",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 focus-visible:ring-offset-ink",
+      )}
+    >
+      {label}
+    </button>
+  );
 }
 
 function AffordanceButton({ onClick, label }: { onClick: () => void; label: string }) {

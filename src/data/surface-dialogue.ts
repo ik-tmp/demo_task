@@ -13,6 +13,7 @@ export const surfaceDialogue = {
   reel: {
     prompt: "Who do you want to talk to first?",
     actions: {
+      talkTo: (name: string) => `Talk to ${name}`,
       seeEveryone: "show all companions",
       pickForMe: "choose someone for me",
       describeSomeoneElse: "describe who you want",

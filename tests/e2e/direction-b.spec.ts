@@ -19,11 +19,23 @@ test.describe("Direction B — M1 Reel", () => {
     await expect(name).toBeVisible();
     await expect(name).toHaveText(/^(Iris|Noa|Mira)$/);
 
-    // Host line and all three affordances.
-    await expect(page.getByText(/who do you want to talk to first/i)).toBeVisible();
-    await expect(page.getByRole("button", { name: "show all companions" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "choose someone for me" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "describe who you want" })).toBeVisible();
+    // All three alternate paths are reachable on both layouts (each label also
+    // exists in the hidden alternate cluster, so scope to the visible instance).
+    const action = (label: string) =>
+      page.getByRole("button", { name: label }).filter({ visible: true });
+    await expect(action("show all companions")).toBeVisible();
+    await expect(action("choose someone for me")).toBeVisible();
+    await expect(action("describe who you want")).toBeVisible();
+
+    if (info.project.name === "desktop") {
+      // Desktop leads with an explicit primary CTA, left-anchored under the name.
+      await expect(
+        page.getByRole("button", { name: /^Talk to (Iris|Noa|Mira)$/ }),
+      ).toBeVisible();
+    } else {
+      // Mobile keeps the host prompt above the centered affordance row.
+      await expect(page.getByText(/who do you want to talk to first/i)).toBeVisible();
+    }
 
     await snapshot(page, info, "b-01-reel-entry");
   });
@@ -37,7 +49,10 @@ test.describe("Direction B — M1 Reel", () => {
 
   test("affordance: pick for me navigates to Match", async ({ page }, info) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "choose someone for me" }).click();
+    await page
+      .getByRole("button", { name: "choose someone for me" })
+      .filter({ visible: true })
+      .click();
     await expect(page).toHaveURL(/\/match/);
     await snapshot(page, info, "b-03-pick-for-me-routed");
   });
