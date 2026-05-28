@@ -1,3 +1,6 @@
+/* Keep Tailwind's cascade order explicit so base resets stay below utilities. */
+@layer theme, base, components, utilities;
+
 @import "tailwindcss";
 
 @theme {
@@ -67,18 +70,20 @@ body {
     "cv11" on;
 }
 
-button,
-input,
-textarea,
-select {
-  font: inherit;
-  color: inherit;
-}
+@layer base {
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
 
-input,
-textarea,
-select {
-  background: transparent;
+  input,
+  textarea,
+  select {
+    background: transparent;
+  }
 }
 
 ::selection {
