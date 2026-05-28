@@ -102,6 +102,11 @@ export const surfaceDialogue = {
       title: "Unlock the full cast",
       body: "New companions, unlimited messages, voice, and memory.",
     },
+    create: {
+      eyebrow: "Yours to keep",
+      title: (name: string) => `Meet ${name}`,
+      body: "Companions you make are part of premium — unlimited messages, voice, and memory.",
+    },
     plans: [
       { id: "monthly", name: "Monthly", perMonth: "$12/mo", billed: "billed monthly", save: null, best: null },
       { id: "quarter", name: "3 months", perMonth: "$10/mo", billed: "$30 every 3 months", save: "Save 17%", best: null },

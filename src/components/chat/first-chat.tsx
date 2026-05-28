@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Lock } from "lucide-react";
@@ -45,6 +45,7 @@ export function FirstChat({ companion }: FirstChatProps) {
   const displayName = useFunnelStore((state) => state.displayName);
   const nameMode = useFunnelStore((state) => state.nameMode);
   const helloContext = useFunnelStore((state) => state.helloContext);
+  const createName = useFunnelStore((state) => state.create?.companionName);
   const setDisplayName = useFunnelStore((state) => state.setDisplayName);
   const setHelloContext = useFunnelStore((state) => state.setHelloContext);
   const sourceParam = searchParams.get("from");
@@ -53,6 +54,11 @@ export function FirstChat({ companion }: FirstChatProps) {
       return sourceParam;
     return "direct";
   }, [sourceParam]);
+
+  // A created persona is premium: meeting it opens the paywall before any
+  // preview conversation. The chat only begins after the mock unlock.
+  const gated = source === "create";
+  const companionName = gated && createName ? createName : companion.name;
 
   const dialogue = useMemo(() => getDialogue(companion.id), [companion.id]);
   const start = useMemo(
@@ -72,7 +78,14 @@ export function FirstChat({ companion }: FirstChatProps) {
         : null,
     [start, companion, displayName, nameMode, helloContext],
   );
-  const preludeStep = resolvePreludeStep(hasHydrated, displayName, helloContext);
+  // Gated personas bypass the name/context prelude and go straight to the
+  // gate; once hydrated we have the created name for the paywall.
+  const preludeStep: PreludeStep = gated
+    ? hasHydrated
+      ? "chat"
+      : "checking"
+    : resolvePreludeStep(hasHydrated, displayName, helloContext);
+  const [gateUnlocked, setGateUnlocked] = useState(false);
   const [beat, setBeat] = useState<DialogueBeat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [repliesReady, setRepliesReady] = useState(false);
@@ -86,12 +99,15 @@ export function FirstChat({ companion }: FirstChatProps) {
   const userTurnsRef = useRef(0);
   const idCounter = useRef(1);
   const startedRef = useRef(false);
+  const gateOpenedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const paywallRef = useRef<HTMLDivElement | null>(null);
   const nextId = (prefix: string) => `${prefix}-${(idCounter.current += 1)}`;
 
-  useEffect(() => {
-    if (preludeStep !== "chat" || !personalizedStart || startedRef.current) return;
+  // Stream the companion's opener. Non-gated chats start it on entry;
+  // gated personas start it only after the mock unlock.
+  const startConversation = useCallback(() => {
+    if (!personalizedStart || startedRef.current) return;
     startedRef.current = true;
     setBeat(personalizedStart);
     setRepliesReady(false);
@@ -105,7 +121,20 @@ export function FirstChat({ companion }: FirstChatProps) {
         typing: true,
       },
     ]);
-  }, [personalizedStart, preludeStep]);
+  }, [personalizedStart]);
+
+  // A created persona opens straight onto the paywall once hydration gives
+  // us its name; the conversation waits behind the mock unlock.
+  useEffect(() => {
+    if (!gated || !hasHydrated || gateOpenedRef.current) return;
+    gateOpenedRef.current = true;
+    setPaywall("open");
+  }, [gated, hasHydrated]);
+
+  useEffect(() => {
+    if (preludeStep !== "chat" || gated) return;
+    startConversation();
+  }, [preludeStep, gated, startConversation]);
 
   // Enter a beat: settle portrait, queue its lines, type the first one.
   const enterBeat = (b: DialogueBeat) => {
@@ -211,6 +240,12 @@ export function FirstChat({ companion }: FirstChatProps) {
     const bonus = beat?.unlockLines ?? [];
     window.setTimeout(() => {
       setPaywall("hidden");
+      // Gated personas haven't spoken yet — unlocking begins their opener.
+      if (gated && !startedRef.current) {
+        setGateUnlocked(true);
+        startConversation();
+        return;
+      }
       if (bonus.length > 0) {
         lineQueueRef.current = bonus.slice(1);
         setMessages((m) => [
@@ -280,7 +315,7 @@ export function FirstChat({ companion }: FirstChatProps) {
         <header className="flex items-center justify-between gap-3 pb-1">
           <div>
             <p className="font-serif text-[20px] leading-tight text-copy">
-              {companion.name}
+              {companionName}
             </p>
             <p className="text-[12px] text-copy-faint">{companion.voiceDescribedAs}</p>
           </div>
@@ -323,7 +358,7 @@ export function FirstChat({ companion }: FirstChatProps) {
 
           {companionTyping ? (
             <div className="self-start text-[12px] italic text-copy-faint">
-              {chatCopy.typing(companion.name)}
+              {chatCopy.typing(companionName)}
             </div>
           ) : null}
         </div>
@@ -349,7 +384,8 @@ export function FirstChat({ companion }: FirstChatProps) {
         <div ref={paywallRef}>
           <Paywall
             status={paywall}
-            companionName={companion.name}
+            companionName={companionName}
+            variant={gated && !gateUnlocked ? "create" : "preview"}
             onContinue={onContinue}
             onDismiss={onDismiss}
           />
@@ -377,7 +413,7 @@ export function FirstChat({ companion }: FirstChatProps) {
               placeholder={
                 paywallBlocking
                   ? chatCopy.inputLocked
-                  : chatCopy.inputPlaceholder(companion.name)
+                  : chatCopy.inputPlaceholder(companionName)
               }
               disabled={inputLocked}
               aria-label={chatCopy.inputAria}

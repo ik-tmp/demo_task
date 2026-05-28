@@ -430,7 +430,6 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
             companion={candidate}
             answers={answers}
             name={reveal.syntheticName ?? chosenName}
-            synthetic={Boolean(reveal.syntheticName)}
             syntheticPremise={reveal.syntheticPremise}
             onMeet={() => router.push(`/chat/${candidate.id}?from=create`)}
           />
@@ -637,14 +636,12 @@ function RevealCard({
   companion,
   answers,
   name,
-  synthetic,
   syntheticPremise,
   onMeet,
 }: {
   companion: Companion;
   answers: CreateAnswers;
   name: string;
-  synthetic: boolean;
   syntheticPremise?: string;
   onMeet: () => void;
 }) {
@@ -679,12 +676,6 @@ function RevealCard({
           “{companion.openers.create}”
         </p>
       </div>
-
-      {synthetic ? null : (
-        <p className="text-[11.5px] text-copy-faint">
-          {createRevealLabels.fallbackNote}
-        </p>
-      )}
 
       <button
         type="button"

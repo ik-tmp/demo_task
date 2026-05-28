@@ -4,7 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Lock, MessageCircle, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Lock,
+  MessageCircle,
+  Sparkles,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { surfaceDialogue } from "@/data/surface-dialogue";
 import { galleryPlaceholders } from "@/data/gallery-placeholders";
@@ -177,7 +183,9 @@ export function Gallery({ companions }: GalleryProps) {
                     ))}
                   </div>
                   {why ? (
-                    <p className="text-[12px] text-copy-faint">{galleryCopy.why(why)}</p>
+                    <p className="text-[12px] text-copy-faint">
+                      {galleryCopy.why(why)}
+                    </p>
                   ) : null}
                   <button
                     type="button"
@@ -209,6 +217,7 @@ export function Gallery({ companions }: GalleryProps) {
               name={p.name}
               vibe={p.vibe}
               accent={p.accent}
+              asset={p.asset}
               onSelect={() => openPaywall(p.name)}
             />
           ))}
@@ -267,7 +276,9 @@ function CompanionTile({
       />
       <div className="absolute inset-x-0 bottom-0 z-10 p-3.5">
         <p className="font-serif text-[24px] leading-none">{companion.name}</p>
-        <p className="mt-1 line-clamp-1 text-[12px] text-copy/75">{companion.premise}</p>
+        <p className="mt-1 line-clamp-1 text-[12px] text-copy/75">
+          {companion.premise}
+        </p>
       </div>
     </button>
   );
@@ -311,11 +322,13 @@ function LockedTile({
   name,
   vibe,
   accent,
+  asset,
   onSelect,
 }: {
   name: string;
   vibe: string;
   accent: string;
+  asset?: string;
   onSelect: () => void;
 }) {
   return (
@@ -325,11 +338,22 @@ function LockedTile({
       aria-label={galleryCopy.lockedTile.lockedAria(name)}
       className="group relative flex aspect-video flex-col justify-between overflow-hidden rounded-tile border border-line/40 p-3.5 text-left transition hover:border-copy/25"
     >
+      {asset ? (
+        <Image
+          src={asset}
+          alt=""
+          fill
+          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          className="h-full w-full scale-[1.02] object-cover opacity-65 blur-[1.5px] saturate-[0.78] transition duration-500 group-hover:scale-[1.05] group-hover:opacity-75"
+        />
+      ) : null}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
-          background: `radial-gradient(110% 120% at 75% 15%, ${accent}33, transparent 60%), linear-gradient(180deg, #211d2b 0%, #0e0c14 100%)`,
+          background: asset
+            ? `radial-gradient(95% 90% at 76% 20%, ${accent}22, transparent 58%), linear-gradient(180deg, rgba(15,13,22,0.2) 0%, rgba(15,13,22,0.35) 42%, rgba(15,13,22,0.92) 100%)`
+            : `radial-gradient(110% 120% at 75% 15%, ${accent}33, transparent 60%), linear-gradient(180deg, #211d2b 0%, #0e0c14 100%)`,
         }}
       />
       <div className="relative z-10 flex items-center justify-between">

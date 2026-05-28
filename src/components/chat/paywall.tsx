@@ -7,7 +7,7 @@ import { surfaceDialogue } from "@/data/surface-dialogue";
 import { cn } from "@/lib/utils";
 
 export type PaywallStatus = "hidden" | "open" | "dismissed" | "success";
-export type PaywallVariant = "preview" | "lockedCast";
+export type PaywallVariant = "preview" | "lockedCast" | "create";
 
 const paywallCopy = surfaceDialogue.paywall;
 type PlanId = (typeof paywallCopy.plans)[number]["id"];
@@ -86,11 +86,17 @@ function OpenBody({
   const header =
     variant === "lockedCast"
       ? paywallCopy.lockedCast
-      : {
-          eyebrow: paywallCopy.eyebrow,
-          title: paywallCopy.title(companionName),
-          body: paywallCopy.body,
-        };
+      : variant === "create"
+        ? {
+            eyebrow: paywallCopy.create.eyebrow,
+            title: paywallCopy.create.title(companionName),
+            body: paywallCopy.create.body,
+          }
+        : {
+            eyebrow: paywallCopy.eyebrow,
+            title: paywallCopy.title(companionName),
+            body: paywallCopy.body,
+          };
 
   return (
     <div className="flex flex-col gap-3.5">

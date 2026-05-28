@@ -72,8 +72,6 @@ export const createDialogue = {
   revealLabels: {
     whatShapedThem: "What you asked for",
     firstMessage: "First message",
-    fallbackNote:
-      "Closest available portrait for this preview.",
     meet: "meet",
   },
 

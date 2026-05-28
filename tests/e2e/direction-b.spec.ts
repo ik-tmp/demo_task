@@ -222,7 +222,7 @@ test.describe("Direction B — M6 Create", () => {
     await snapshot(page, info, "b-10-create-reveal");
   });
 
-  test("create reveal Meet routes to chat with from=create", async ({ page }) => {
+  test("create reveal Meet gates the chat behind the paywall", async ({ page }, info) => {
     await page.goto("/create");
     await page.getByRole("button", { name: /^warmth$/i }).click();
     await page.getByRole("button", { name: /^keep going$/i }).click();
@@ -234,7 +234,12 @@ test.describe("Direction B — M6 Create", () => {
     await page.getByRole("button", { name: /^skip ahead$/i }).click();
     await page.getByRole("button", { name: /^Noa$|^Sasha$|^Mira$/i }).first().click();
     await expect(page.getByRole("button", { name: /^meet /i })).toBeVisible({ timeout: 5000 });
+    // The reveal must not claim the portrait is a stand-in.
+    await expect(page.getByText(/closest available portrait/i)).toHaveCount(0);
     await page.getByRole("button", { name: /^meet /i }).click();
     await expect(page).toHaveURL(/\/chat\/.+\?from=create/);
+    // Meeting a created persona opens the paywall before any preview chat.
+    await expect(page.getByText(/yours to keep/i)).toBeVisible({ timeout: 5000 });
+    await snapshot(page, info, "b-11-create-paywall");
   });
 });
