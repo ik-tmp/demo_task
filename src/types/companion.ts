@@ -80,8 +80,6 @@ export type Companion = {
   voiceDescribedAs: string;
   openers: CompanionOpeners;
   rationale: CompanionRationale;
-  responses: string[];
-  suggestedReplies: string[];
   reelSlot: number;
 };
 

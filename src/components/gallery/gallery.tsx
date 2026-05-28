@@ -6,6 +6,7 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { surfaceDialogue } from "@/data/surface-dialogue";
 import { cn } from "@/lib/utils";
 import type { Companion } from "@/types/companion";
 import {
@@ -26,6 +27,7 @@ const refinementIds: RefinementId[] = [
   "less-polished",
   "stranger",
 ];
+const galleryCopy = surfaceDialogue.gallery;
 
 type GalleryProps = {
   companions: Companion[];
@@ -91,22 +93,22 @@ export function Gallery({ companions }: GalleryProps) {
             className="inline-flex items-center gap-1 text-[13px] text-copy-muted transition hover:text-copy"
           >
             <ArrowLeft size={14} />
-            reel
+            {galleryCopy.back}
           </Link>
           <form onSubmit={submitQuery} className="flex flex-1 max-w-md items-center gap-2">
             <input
               type="text"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              placeholder="Describe what you want to see."
-              aria-label="Search companions"
+              placeholder={galleryCopy.searchPlaceholder}
+              aria-label={galleryCopy.searchAria}
               className="flex-1 rounded-pill border border-line bg-copy/5 px-4 py-1.5 text-[13px] text-copy placeholder:text-copy-faint focus:border-copy/35 focus:outline-none"
             />
             <button
               type="submit"
               className="rounded-pill border border-line bg-copy/8 px-3 py-1.5 text-[13px] text-copy transition hover:bg-copy/14"
             >
-              go
+              {galleryCopy.submit}
             </button>
           </form>
           <span className="hidden text-[12px] text-copy-faint md:inline">
@@ -149,7 +151,7 @@ export function Gallery({ companions }: GalleryProps) {
               <button
                 type="button"
                 onClick={goPrev}
-                aria-label="previous"
+                aria-label={galleryCopy.previousAria}
                 className="absolute left-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-line bg-ink/55 p-2 text-copy backdrop-blur transition hover:bg-ink/75 md:block"
               >
                 <ChevronLeft size={18} />
@@ -157,7 +159,7 @@ export function Gallery({ companions }: GalleryProps) {
               <button
                 type="button"
                 onClick={goNext}
-                aria-label="next"
+                aria-label={galleryCopy.nextAria}
                 className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-line bg-ink/55 p-2 text-copy backdrop-blur transition hover:bg-ink/75 md:block"
               >
                 <ChevronRight size={18} />
@@ -199,7 +201,7 @@ export function Gallery({ companions }: GalleryProps) {
 
                   {why ? (
                     <p className="text-[12px] text-copy-faint">
-                      Why you’re seeing this: matched on {why}.
+                      {galleryCopy.why(why)}
                     </p>
                   ) : null}
 
@@ -208,7 +210,7 @@ export function Gallery({ companions }: GalleryProps) {
                     onClick={() => router.push(`/chat/${active.companion.id}?from=browse`)}
                     className="inline-flex w-fit items-center gap-1.5 rounded-pill bg-coral px-4 py-2 text-[14px] font-semibold text-ink shadow-soft transition hover:bg-rose"
                   >
-                    <MessageCircle size={14} /> say hi to {active.companion.name}
+                    <MessageCircle size={14} /> {galleryCopy.sayHi(active.companion.name)}
                   </button>
                 </div>
               </div>

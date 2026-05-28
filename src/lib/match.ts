@@ -1,9 +1,11 @@
+import { matchDialogue } from "@/data/match-dialogue";
 import type { Companion } from "@/types/companion";
 
-export type MatchAxis = "feeling" | "role" | "avoid" | "familiarity";
+export type MatchAxis = "feeling" | "role" | "texture" | "avoid" | "familiarity";
 
 export type FeelingId = "calmer" | "wanted" | "challenged" | "entertained" | "understood";
 export type RoleId = "lead" | "listen" | "tease" | "ask" | "i-dont-know";
+export type TextureId = "quiet-close" | "quick-spark" | "honest-mirror" | "slow-burn";
 export type AvoidId =
   | "not-fix"
   | "not-push"
@@ -15,6 +17,7 @@ export type FamiliarityId = "familiar" | "surprising" | "dangerous";
 export type MatchAnswers = {
   feeling?: FeelingId;
   role?: RoleId;
+  texture?: TextureId;
   avoid?: AvoidId[];
   familiarity?: FamiliarityId;
 };
@@ -35,6 +38,13 @@ const roleScores: ScoreTable = {
   tease:          { iris: 1, noa: 3, mira: 2, sasha: 0 },
   ask:            { iris: 3, noa: 1, mira: 2, sasha: 3 },
   "i-dont-know":  { iris: 2, noa: 2, mira: 2, sasha: 2 },
+};
+
+const textureScores: ScoreTable = {
+  "quiet-close":   { iris: 3, noa: 1, mira: 2, sasha: 3 },
+  "quick-spark":   { iris: 1, noa: 3, mira: 2, sasha: 1 },
+  "honest-mirror": { iris: 2, noa: 1, mira: 3, sasha: 3 },
+  "slow-burn":     { iris: 3, noa: 1, mira: 2, sasha: 3 },
 };
 
 const avoidScores: ScoreTable = {
@@ -59,6 +69,7 @@ export function scoreCompanions(
     let s = 0;
     if (answers.feeling) s += feelingScores[answers.feeling]?.[c.id] ?? 0;
     if (answers.role) s += (roleScores[answers.role]?.[c.id] ?? 0) * 0.9;
+    if (answers.texture) s += (textureScores[answers.texture]?.[c.id] ?? 0) * 0.7;
     if (answers.avoid?.length) {
       for (const a of answers.avoid) s += (avoidScores[a]?.[c.id] ?? 0) * 0.8;
     }
@@ -97,59 +108,33 @@ export function isAmbiguous(
 
 // ---- Reveal copy composition --------------------------------------------
 
-const feelingPhrase: Record<FeelingId, string> = {
-  calmer:      "calm",
-  wanted:      "wanted",
-  challenged:  "challenged",
-  entertained: "lit-up",
-  understood:  "understood",
-};
-
-const feelingCounterweight: Record<FeelingId, string> = {
-  calmer:      "Not fragile.",
-  wanted:      "Not desperate.",
-  challenged:  "Not combative.",
-  entertained: "Not noisy.",
-  understood:  "Not patronised.",
-};
-
-const rolePhrase: Record<RoleId, string> = {
-  lead:           "Steady on her feet, not pushy.",
-  listen:         "Attentive, not too much.",
-  tease:          "Plays, doesn't perform.",
-  ask:            "Asks first, suggests later.",
-  "i-dont-know": "Reads the room before she answers.",
-};
-
 export function composeRevealLines(
   companion: Companion,
   answers: MatchAnswers,
 ): [string, string, string] {
+  const copy = matchDialogue.reveal;
   const feel = answers.feeling
-    ? `Looking for ${feelingPhrase[answers.feeling]}. ${feelingCounterweight[answers.feeling]}`
+    ? `Looking for ${copy.feelingPhrase[answers.feeling]}. ${copy.feelingCounterweight[answers.feeling]}`
     : "Looking for someone you can settle into.";
   const role = answers.role
-    ? rolePhrase[answers.role]
+    ? copy.rolePhrase[answers.role]
     : "Reads the room before she answers.";
+  const texture = answers.texture
+    ? copy.texturePhrase[answers.texture]
+    : "Lets the first exchange find its own temperature.";
   const arrival = `I think you should meet ${companion.name}.`;
-  return [feel, role, arrival];
+  return [feel, `${role} ${texture}`, arrival];
 }
-
-const avoidRationale: Partial<Record<AvoidId, string>> = {
-  "not-fix":     "asks before she suggests",
-  "not-push":    "takes her time on purpose",
-  "not-flirt":   "keeps the warmth without the wink",
-  "not-perform": "doesn't grandstand",
-};
 
 export function composeWhyHer(
   companion: Companion,
   answers: MatchAnswers,
 ): string[] {
+  const copy = matchDialogue.reveal;
   const bullets: string[] = [];
   if (answers.feeling) {
     bullets.push(
-      `You wanted ${feelingPhrase[answers.feeling]} — ${decap(companion.rationale.energy)}`,
+      `You wanted ${copy.feelingPhrase[answers.feeling]} — ${decap(companion.rationale.energy)}`,
     );
   }
   if (answers.role) {
@@ -157,9 +142,14 @@ export function composeWhyHer(
       answers.role === "i-dont-know" ? "you weren't sure" : answers.role;
     bullets.push(`You said ${rolePhraseShort} — ${decap(companion.rationale.look)}`);
   }
+  if (answers.texture) {
+    bullets.push(
+      `You wanted ${copy.textureShort[answers.texture]} — ${decap(companion.rationale.voice)}`,
+    );
+  }
   if (answers.avoid && answers.avoid.length > 0) {
     const a = answers.avoid[0];
-    const phrase = avoidRationale[a] ?? "keeps it light";
+    const phrase = copy.avoidRationale[a] ?? "keeps it light";
     bullets.push(`You said ${a.replace(/-/g, " ")} — she ${phrase}.`);
   }
   if (bullets.length < 3) {
@@ -170,6 +160,11 @@ export function composeWhyHer(
 
 function decap(s: string): string {
   return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
+export function reactionFor(axis: MatchAxis, id: string): string | null {
+  const reactions = matchDialogue.reactions as Record<string, Record<string, string>>;
+  return reactions[axis]?.[id] ?? null;
 }
 
 export type RejectionAxis = "look" | "voice" | "energy" | "all";

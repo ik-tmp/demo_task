@@ -1,9 +1,12 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { surfaceDialogue } from "@/data/surface-dialogue";
 import { cn } from "@/lib/utils";
 
 export type PaywallStatus = "hidden" | "open" | "dismissed" | "success" | "error";
+
+const paywallCopy = surfaceDialogue.paywall;
 
 type PaywallProps = {
   status: PaywallStatus;
@@ -58,13 +61,13 @@ export function Paywall({
           />
         ) : null}
         {status === "dismissed" ? (
-          <Quiet body="No problem. This chat stays in preview." />
+          <Quiet body={paywallCopy.dismissed} />
         ) : null}
         {status === "success" ? (
-          <Quiet body={"You're in. Keep going."} />
+          <Quiet body={paywallCopy.success} />
         ) : null}
         {status === "error" ? (
-          <Quiet body={"That didn't go through. Nothing changed."} onRetry={onContinue} />
+          <Quiet body={paywallCopy.error} onRetry={onContinue} />
         ) : null}
       </motion.div>
     </AnimatePresence>
@@ -88,10 +91,10 @@ function OpenBody({
     <div className="flex flex-col gap-3">
       <div>
         <p className="font-serif text-[19px] text-copy">
-          Keep talking with {companionName}?
+          {paywallCopy.title(companionName)}
         </p>
         <p className="mt-1 text-[13px] text-copy-muted">
-          Your preview is ready to continue.
+          {paywallCopy.body}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -100,7 +103,7 @@ function OpenBody({
           onClick={onContinue}
           className="inline-flex items-center gap-1.5 rounded-pill bg-coral px-3.5 py-1.5 text-[13px] font-semibold text-ink hover:bg-rose"
         >
-          continue
+          {paywallCopy.actions.continue}
         </button>
         <button
           type="button"
@@ -109,21 +112,21 @@ function OpenBody({
             "rounded-pill border border-line bg-copy/8 px-3 py-1.5 text-[13px] text-copy transition hover:bg-copy/14",
           )}
         >
-          not now
+          {paywallCopy.actions.notNow}
         </button>
         <button
           type="button"
           onClick={onTryAnother}
           className="rounded-pill border border-line bg-copy/8 px-3 py-1.5 text-[13px] text-copy transition hover:bg-copy/14"
         >
-          try someone else
+          {paywallCopy.actions.trySomeoneElse}
         </button>
         <button
           type="button"
           onClick={onRestoreError}
           className="text-[12px] text-copy-faint underline-offset-2 transition hover:text-copy-muted hover:underline"
         >
-          restore access
+          {paywallCopy.actions.restoreAccess}
         </button>
       </div>
     </div>
@@ -140,7 +143,7 @@ function Quiet({ body, onRetry }: { body: string; onRetry?: () => void }) {
           onClick={onRetry}
           className="self-start rounded-pill border border-line bg-copy/8 px-3 py-1 text-[12px] text-copy hover:bg-copy/14"
         >
-          try again
+          {paywallCopy.actions.tryAgain}
         </button>
       ) : null}
     </div>

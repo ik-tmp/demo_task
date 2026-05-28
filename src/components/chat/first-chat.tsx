@@ -4,13 +4,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { surfaceDialogue } from "@/data/surface-dialogue";
 import { cn } from "@/lib/utils";
-import type { Companion } from "@/types/companion";
+import type { Companion, PortraitState } from "@/types/companion";
+import type { DialogueBeat, Source } from "@/types/dialogue";
+import {
+  MAX_USER_TURNS,
+  getBeat,
+  getDialogue,
+  portraitAsset,
+  routeFreeText,
+  startBeat,
+} from "@/lib/dialogue";
+import { motionMs } from "@/lib/motion";
 import { FunnelShell } from "@/components/funnel/funnel-shell";
 import { TypingText } from "./typing-text";
 import { Paywall, type PaywallStatus } from "./paywall";
-
-type Source = "browse" | "match" | "create" | "direct";
 
 type Message = {
   id: string;
@@ -19,11 +28,10 @@ type Message = {
   typing?: boolean;
 };
 
-const PAYWALL_AFTER_USER_MESSAGES = 3;
-
 type FirstChatProps = {
   companion: Companion;
 };
+const chatCopy = surfaceDialogue.chat;
 
 export function FirstChat({ companion }: FirstChatProps) {
   const router = useRouter();
@@ -35,69 +43,98 @@ export function FirstChat({ companion }: FirstChatProps) {
     return "direct";
   }, [sourceParam]);
 
-  const opener = useMemo(() => arrivalOpener(companion, source), [companion, source]);
+  const dialogue = useMemo(() => getDialogue(companion.id), [companion.id]);
+  const start = useMemo(
+    () => (dialogue ? startBeat(dialogue, source) : null),
+    [dialogue, source],
+  );
 
-  const [messages, setMessages] = useState<Message[]>([
-    { id: "opener", author: "companion", text: opener, typing: true },
-  ]);
-  const [openerDone, setOpenerDone] = useState(false);
-  const [userInput, setUserInput] = useState("");
+  const [beat, setBeat] = useState<DialogueBeat | null>(start);
+  const [messages, setMessages] = useState<Message[]>(() =>
+    start
+      ? [{ id: "c-1", author: "companion", text: start.lines[0], typing: true }]
+      : [],
+  );
+  const [repliesReady, setRepliesReady] = useState(false);
   const [companionTyping, setCompanionTyping] = useState(false);
+  const [portrait, setPortrait] = useState<PortraitState>(start?.portrait ?? "warm");
   const [paywall, setPaywall] = useState<PaywallStatus>("hidden");
-  const userMessageCount = messages.filter((m) => m.author === "user").length;
+  const [userInput, setUserInput] = useState("");
+
+  const lineQueueRef = useRef<string[]>(start ? start.lines.slice(1) : []);
+  const userTurnsRef = useRef(0);
+  const idCounter = useRef(1);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const idCounter = useRef(0);
-  const nextId = (prefix: string) => {
-    idCounter.current += 1;
-    return `${prefix}-${idCounter.current}`;
+  const nextId = (prefix: string) => `${prefix}-${(idCounter.current += 1)}`;
+
+  // Enter a beat: settle portrait, queue its lines, type the first one.
+  const enterBeat = (b: DialogueBeat) => {
+    setBeat(b);
+    setRepliesReady(false);
+    if (b.portrait) setPortrait(b.portrait);
+    const [first, ...rest] = b.lines;
+    lineQueueRef.current = rest;
+    setMessages((m) => [
+      ...m,
+      { id: nextId("c"), author: "companion", text: first, typing: true },
+    ]);
   };
 
-  // Auto-scroll on new message.
+  // Auto-scroll on new content.
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
-  }, [messages.length, openerDone]);
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, repliesReady, paywall]);
 
-  const sendUser = (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    const userMsg: Message = {
-      id: nextId("u"),
-      author: "user",
-      text: trimmed,
-    };
-    setMessages((m) => [...m, userMsg]);
-    setUserInput("");
-
-    // After Nth user message, trigger paywall — don't respond.
-    const nextCount = userMessageCount + 1;
-    if (nextCount > PAYWALL_AFTER_USER_MESSAGES) {
-      setPaywall("open");
+  // A companion line finished typing.
+  const handleLineDone = (id: string) => {
+    setMessages((cur) => cur.map((x) => (x.id === id ? { ...x, typing: false } : x)));
+    if (lineQueueRef.current.length > 0) {
+      const [next, ...rest] = lineQueueRef.current;
+      lineQueueRef.current = rest;
+      window.setTimeout(() => {
+        setMessages((m) => [
+          ...m,
+          { id: nextId("c"), author: "companion", text: next, typing: true },
+        ]);
+      }, motionMs(160));
       return;
     }
-
-    // Companion response after a short "typing" delay.
-    setCompanionTyping(true);
-    window.setTimeout(() => {
-      const respIndex = userMessageCount % companion.responses.length;
-      const respText = companion.responses[respIndex];
-      setMessages((m) => [
-        ...m,
-        { id: nextId("c"), author: "companion", text: respText, typing: true },
-      ]);
-      setCompanionTyping(false);
-      if (nextCount === PAYWALL_AFTER_USER_MESSAGES) {
-        // Surface paywall after the companion's last response.
-        window.setTimeout(() => setPaywall("open"), 1200);
-      }
-    }, 850);
+    // Beat fully delivered.
+    if (beat?.paywall || userTurnsRef.current >= MAX_USER_TURNS) {
+      window.setTimeout(() => setPaywall("open"), motionMs(400));
+    } else {
+      setRepliesReady(true);
+    }
   };
 
-  const onSuggested = (text: string) => sendUser(text);
+  // Advance to the next beat, recording what the user said.
+  const advance = (nextBeatId: string, userText: string) => {
+    if (!dialogue) return;
+    setRepliesReady(false);
+    setUserInput("");
+    setMessages((m) => [...m, { id: nextId("u"), author: "user", text: userText }]);
+    userTurnsRef.current += 1;
+    setCompanionTyping(true);
+    window.setTimeout(() => {
+      setCompanionTyping(false);
+      const next = getBeat(dialogue, nextBeatId);
+      if (next) enterBeat(next);
+    }, motionMs(380));
+  };
 
+  const chooseReply = (next: string, said: string) => advance(next, said);
+
+  const sendFreeText = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || !beat || !repliesReady) return;
+    const reply = routeFreeText(beat, trimmed);
+    if (!reply) return;
+    advance(reply.next, trimmed);
+  };
+
+  // Paywall handlers (mock).
   const onContinue = () => {
-    // Mock success.
     setPaywall("success");
     window.setTimeout(() => setPaywall("hidden"), 1600);
   };
@@ -105,19 +142,18 @@ export function FirstChat({ companion }: FirstChatProps) {
   const onTryAnother = () => router.push("/");
   const onRestoreError = () => setPaywall("error");
 
-  // Suggested replies — from companion data; only shown when companion has just spoken
-  // and paywall isn't open.
-  const lastMessage = messages[messages.length - 1];
-  const showSuggested =
-    lastMessage?.author === "companion" &&
+  const showReplies =
+    repliesReady &&
     !companionTyping &&
     paywall !== "open" &&
-    paywall !== "success";
+    paywall !== "success" &&
+    Boolean(beat?.replies?.length);
+  const inputLocked = paywall === "open" || !repliesReady || companionTyping;
 
   return (
     <FunnelShell
       portrait={{
-        src: companion.assets.finalChat,
+        src: portraitAsset(companion, portrait),
         alt: companion.name,
         faceSafe: companion.faceSafe,
       }}
@@ -135,7 +171,7 @@ export function FirstChat({ companion }: FirstChatProps) {
         <div
           ref={scrollRef}
           className="flex flex-col gap-2.5 overflow-y-auto"
-          aria-label="conversation"
+          aria-label={chatCopy.conversationAria}
         >
           <AnimatePresence initial={false}>
             {messages.map((m) => (
@@ -154,14 +190,8 @@ export function FirstChat({ companion }: FirstChatProps) {
                 {m.typing ? (
                   <TypingText
                     text={m.text}
-                    speed={m.id === "opener" ? 32 : 22}
-                    onDone={() => {
-                      if (m.id === "opener") setOpenerDone(true);
-                      // Mark this message as no-longer-typing so future re-renders don't re-type.
-                      setMessages((cur) =>
-                        cur.map((x) => (x.id === m.id ? { ...x, typing: false } : x)),
-                      );
-                    }}
+                    speed={12}
+                    onDone={() => handleLineDone(m.id)}
                   />
                 ) : (
                   m.text
@@ -172,21 +202,22 @@ export function FirstChat({ companion }: FirstChatProps) {
 
           {companionTyping ? (
             <div className="self-start text-[12px] italic text-copy-faint">
-              {companion.name.toLowerCase()} is typing…
+              {chatCopy.typing(companion.name)}
             </div>
           ) : null}
         </div>
 
-        {showSuggested && openerDone ? (
+        {showReplies ? (
           <div className="flex flex-wrap gap-1.5">
-            {companion.suggestedReplies.map((s) => (
+            {beat!.replies!.map((r) => (
               <button
-                key={s}
+                key={r.next + r.label}
                 type="button"
-                onClick={() => onSuggested(s)}
+                data-suggested-reply
+                onClick={() => chooseReply(r.next, r.said ?? r.label)}
                 className="rounded-pill border border-line bg-copy/6 px-3 py-1 text-[12.5px] text-copy-muted transition hover:bg-copy/12 hover:text-copy"
               >
-                {s}
+                {r.label}
               </button>
             ))}
           </div>
@@ -204,7 +235,7 @@ export function FirstChat({ companion }: FirstChatProps) {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            sendUser(userInput);
+            sendFreeText(userInput);
           }}
           className="mt-1 flex items-center gap-2"
         >
@@ -212,15 +243,19 @@ export function FirstChat({ companion }: FirstChatProps) {
             type="text"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
-            placeholder={paywall === "open" ? "preview is full" : `say something to ${companion.name}`}
-            disabled={paywall === "open"}
-            aria-label="say something"
+            placeholder={
+              paywall === "open"
+                ? chatCopy.inputPreviewFull
+                : chatCopy.inputPlaceholder(companion.name)
+            }
+            disabled={inputLocked}
+            aria-label={chatCopy.inputAria}
             className="flex-1 rounded-pill border border-line bg-copy/5 px-4 py-2 text-[14px] text-copy placeholder:text-copy-faint focus:border-copy/35 focus:outline-none disabled:opacity-50"
           />
           <button
             type="submit"
-            disabled={!userInput.trim() || paywall === "open"}
-            aria-label="send"
+            disabled={!userInput.trim() || inputLocked}
+            aria-label={chatCopy.sendAria}
             className="grid h-9 w-9 place-items-center rounded-full border border-line bg-copy/8 text-copy transition hover:bg-copy/14 disabled:opacity-40"
           >
             <ArrowRight size={16} />
@@ -229,18 +264,4 @@ export function FirstChat({ companion }: FirstChatProps) {
       </div>
     </FunnelShell>
   );
-}
-
-function arrivalOpener(companion: Companion, source: Source): string {
-  switch (source) {
-    case "browse":
-      return companion.openers.browse;
-    case "match":
-      return companion.openers.match;
-    case "create":
-      return companion.openers.create;
-    case "direct":
-    default:
-      return companion.openers.browse;
-  }
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { surfaceDialogue } from "@/data/surface-dialogue";
 import { cn } from "@/lib/utils";
 import { rankCompanions } from "@/lib/reel-ranking";
 import type { Companion } from "@/types/companion";
@@ -13,6 +14,7 @@ import { Dotline } from "./dotline";
 const REEL_VIGNETTE_MS = 3000;
 const REEL_FADE_MS = 500;
 const REJECTED_KEY = "reel:rejected";
+const reelCopy = surfaceDialogue.reel;
 
 type ReelProps = {
   companions: Companion[];
@@ -101,7 +103,7 @@ export function Reel({ companions }: ReelProps) {
               key={current.id}
               type="button"
               onClick={() => interrupt(() => router.push(`/companion/${current.id}`))}
-              aria-label={`Open ${current.name}`}
+              aria-label={reelCopy.openAria(current.name)}
               className="absolute inset-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-coral"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -143,7 +145,7 @@ export function Reel({ companions }: ReelProps) {
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 pb-[max(env(safe-area-inset-bottom),20px)]">
             <div className="pointer-events-auto mx-auto flex max-w-[1600px] flex-col items-center gap-4 px-6 sm:px-10">
               <p className="text-center text-[14px] text-copy/70 sm:text-[15px]">
-                Who do you want to start with?
+                {reelCopy.prompt}
               </p>
               <Dotline count={order.length} active={index} />
               <Affordances
@@ -168,11 +170,14 @@ type AffordancesProps = {
 function Affordances({ onSeeEveryone, onPickForMe, onDescribe }: AffordancesProps) {
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1.5 text-[14px] sm:text-[15px]">
-      <AffordanceButton onClick={onSeeEveryone} label="see everyone" />
+      <AffordanceButton onClick={onSeeEveryone} label={reelCopy.actions.seeEveryone} />
       <Sep />
-      <AffordanceButton onClick={onPickForMe} label="pick for me" />
+      <AffordanceButton onClick={onPickForMe} label={reelCopy.actions.pickForMe} />
       <Sep />
-      <AffordanceButton onClick={onDescribe} label="describe someone else" />
+      <AffordanceButton
+        onClick={onDescribe}
+        label={reelCopy.actions.describeSomeoneElse}
+      />
     </div>
   );
 }

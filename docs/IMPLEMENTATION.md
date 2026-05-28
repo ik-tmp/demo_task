@@ -73,6 +73,7 @@ The existing app code can be reused selectively, but it should be treated as leg
   - Free text can jump deeper into the path when the user is specific.
   - In-shell back behavior restores previous conversation state without clearing earlier answers.
   - Funnel state persists in `sessionStorage` per route-backed session key.
+  - Dialogue and reviewable surface copy now live in `src/data/dialogues.ts`, `src/data/match-dialogue.ts`, `src/data/create-dialogue.ts`, and `src/data/surface-dialogue.ts`; TSX components should stay mostly rendering/flow code.
 
 - `[x]` Discover existing companions
   - Browse starts through chat and can open a fuller discovery view.
@@ -81,6 +82,7 @@ The existing app code can be reused selectively, but it should be treated as leg
 
 - `[x]` Quick match
   - Ask only enough questions to produce a credible companion.
+  - Current flow includes feeling, role, first-message texture, avoidances, and optional familiarity.
   - Use a narrated reveal rather than a spinner.
   - Rejection becomes signal for the next result.
   - Reveal explains fit in human language, not scoring terms.
@@ -88,7 +90,7 @@ The existing app code can be reused selectively, but it should be treated as leg
 - `[x]` Specific companion path
   - Replace "make someone" framing with "I'm waiting for someone else."
   - User describes who they hoped would answer.
-  - Follow-up questions shape feeling, role, voice, pace, boundaries, ritual, appearance, name, and first message.
+  - Follow-up questions shape feeling, role, voice, pace, appearance, boundaries, first-message context, and name.
   - Preview shows portrait, name, first message, and what shaped them.
 
 - `[x]` First conversation

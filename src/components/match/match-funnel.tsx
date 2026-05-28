@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Compass, MessageCircle, Users } from "lucide-react";
+import { matchDialogue } from "@/data/match-dialogue";
 import { cn } from "@/lib/utils";
 import type { Companion } from "@/types/companion";
 import {
@@ -13,19 +14,23 @@ import {
   type MatchAnswers,
   type RejectionAxis,
   type RoleId,
+  type TextureId,
   composeRevealLines,
   composeWhyHer,
   isAmbiguous,
   pickMatch,
+  reactionFor,
 } from "@/lib/match";
+import { motionMs, motionSec } from "@/lib/motion";
 import { FunnelShell } from "@/components/funnel/funnel-shell";
-import { FunnelStep, type StepChoice } from "@/components/funnel/funnel-step";
+import { FunnelStep } from "@/components/funnel/funnel-step";
 import { HostLine } from "@/components/funnel/host-line";
 
 type Step =
   | "intro"
   | "feeling"
   | "role"
+  | "texture"
   | "avoid"
   | "familiarity"
   | "loading"
@@ -33,12 +38,13 @@ type Step =
   | "rejection-diagnostic"
   | "create-handoff";
 
-const TOTAL_DOTS = 4; // feeling, role, avoid, [familiarity OR reveal]
+const TOTAL_DOTS = 5; // feeling, role, texture, avoid, [familiarity OR reveal]
 const BLUR_BY_STEP: Record<Step, number> = {
   intro: 38,
   feeling: 30,
-  role: 22,
-  avoid: 14,
+  role: 24,
+  texture: 18,
+  avoid: 12,
   familiarity: 10,
   loading: 8,
   reveal: 0,
@@ -46,55 +52,10 @@ const BLUR_BY_STEP: Record<Step, number> = {
   "create-handoff": 0,
 };
 
-const feelingChoices: StepChoice[] = [
-  { id: "calmer", label: "calmer" },
-  { id: "wanted", label: "wanted" },
-  { id: "challenged", label: "challenged" },
-  { id: "entertained", label: "entertained" },
-  { id: "understood", label: "understood" },
-];
-
-const roleChoices: StepChoice[] = [
-  { id: "lead", label: "lead" },
-  { id: "listen", label: "listen" },
-  { id: "tease", label: "tease" },
-  { id: "ask", label: "ask" },
-  { id: "i-dont-know", label: "I don't know yet" },
-];
-
-const avoidChoices: StepChoice[] = [
-  { id: "not-fix", label: "not fix" },
-  { id: "not-push", label: "not push" },
-  { id: "not-flirt", label: "not flirt" },
-  { id: "not-perform", label: "not perform" },
-  { id: "nothing-specific", label: "nothing specific" },
-];
-
-const familiarityChoices: StepChoice[] = [
-  { id: "familiar", label: "familiar" },
-  { id: "surprising", label: "surprising" },
-  { id: "dangerous", label: "a little dangerous" },
-];
-
-const rejectionAxisChoices: StepChoice[] = [
-  { id: "look", label: "look" },
-  { id: "voice", label: "voice" },
-  { id: "energy", label: "energy" },
-  { id: "all", label: "all of it" },
-  { id: "choices", label: "show me choices" },
-];
-
-const loadingLines: Record<Step, string | null> = {
-  intro: null,
-  feeling: null,
-  role: "trying a warmer room…",
-  avoid: "checking who fits that pace…",
-  familiarity: "narrowing it down…",
-  loading: "asking around…",
-  reveal: null,
-  "rejection-diagnostic": null,
-  "create-handoff": null,
-};
+const matchChoices = matchDialogue.choices;
+const matchPrompts = matchDialogue.prompts;
+const matchActions = matchDialogue.actions;
+const matchRevealLabels = matchDialogue.revealLabels;
 
 type Pill = { id: string; label: string; axis: string };
 
@@ -110,6 +71,7 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
   const [rejectedIds, setRejectedIds] = useState<string[]>([]);
   const [rejectionCount, setRejectionCount] = useState(0);
   const [revealLineIndex, setRevealLineIndex] = useState(0);
+  const [reaction, setReaction] = useState<string | null>(null);
   const stepIndex = stepToDotIndex(step);
 
   // Always have a tentative candidate to drive the portrait.
@@ -127,8 +89,8 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
   // Advance through the 3 reveal lines once we enter the reveal step.
   useEffect(() => {
     if (step !== "reveal") return;
-    const t1 = window.setTimeout(() => setRevealLineIndex(1), 600);
-    const t2 = window.setTimeout(() => setRevealLineIndex(2), 1200);
+    const t1 = window.setTimeout(() => setRevealLineIndex(1), motionMs(600));
+    const t2 = window.setTimeout(() => setRevealLineIndex(2), motionMs(1200));
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
@@ -143,8 +105,9 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
     if (step !== "loading") return;
     revealTimerRef.current = window.setTimeout(() => {
       setRevealLineIndex(0);
+      setReaction(null);
       setStep("reveal");
-    }, 900);
+    }, motionMs(900));
     return () => {
       if (revealTimerRef.current) {
         window.clearTimeout(revealTimerRef.current);
@@ -155,7 +118,8 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
 
   const goBack = () => {
     if (step === "role") return setStep("feeling");
-    if (step === "avoid") return setStep("role");
+    if (step === "texture") return setStep("role");
+    if (step === "avoid") return setStep("texture");
     if (step === "familiarity") return setStep("avoid");
     if (step === "loading" || step === "reveal") {
       // Back from reveal returns to last asked question.
@@ -168,7 +132,7 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
   };
 
   const skip = () => {
-    // "just meet them" — jump straight to a confident low-risk reveal.
+    // Jump straight to a confident low-risk reveal.
     setStep("reveal");
   };
 
@@ -176,16 +140,26 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
 
   const handleFeeling = (ids: string[]) => {
     const id = ids[0] as FeelingId;
-    const label = feelingChoices.find((c) => c.id === id)!.label;
+    const label = matchChoices.feeling.find((c) => c.id === id)!.label;
     setAnswers((a) => ({ ...a, feeling: id }));
     setPills((p) => [...p, { id: `feeling-${id}`, label, axis: "feeling" }]);
+    setReaction(reactionFor("feeling", id));
     setStep("role");
   };
   const handleRole = (ids: string[]) => {
     const id = ids[0] as RoleId;
-    const label = roleChoices.find((c) => c.id === id)!.label;
+    const label = matchChoices.role.find((c) => c.id === id)!.label;
     setAnswers((a) => ({ ...a, role: id }));
     setPills((p) => [...p, { id: `role-${id}`, label, axis: "role" }]);
+    setReaction(reactionFor("role", id));
+    setStep("texture");
+  };
+  const handleTexture = (ids: string[]) => {
+    const id = ids[0] as TextureId;
+    const label = matchChoices.texture.find((c) => c.id === id)!.label;
+    setAnswers((a) => ({ ...a, texture: id }));
+    setPills((p) => [...p, { id: `texture-${id}`, label, axis: "texture" }]);
+    setReaction(reactionFor("texture", id));
     setStep("avoid");
   };
   const handleAvoid = (ids: string[]) => {
@@ -195,10 +169,11 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
       ...p,
       ...cast.map((id) => ({
         id: `avoid-${id}`,
-        label: avoidChoices.find((c) => c.id === id)!.label,
+        label: matchChoices.avoid.find((c) => c.id === id)!.label,
         axis: "avoid",
       })),
     ]);
+    setReaction(reactionFor("avoid", cast[0]));
     // Q4 only fires when prior answers can't distinguish 2+ candidates.
     const next: MatchAnswers = { ...answers, avoid: cast };
     if (isAmbiguous(companions, next)) {
@@ -209,9 +184,10 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
   };
   const handleFamiliarity = (ids: string[]) => {
     const id = ids[0] as FamiliarityId;
-    const label = familiarityChoices.find((c) => c.id === id)!.label;
+    const label = matchChoices.familiarity.find((c) => c.id === id)!.label;
     setAnswers((a) => ({ ...a, familiarity: id }));
     setPills((p) => [...p, { id: `fam-${id}`, label, axis: "familiarity" }]);
+    setReaction(reactionFor("familiarity", id));
     setStep("loading");
   };
   const handleFreeText = (axis: keyof MatchAnswers) => (text: string) => {
@@ -221,8 +197,10 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
       ...p,
       { id: `${axis}-text`, label: `"${truncate(text, 22)}"`, axis: String(axis) },
     ]);
+    setReaction(matchPrompts.freeTextReaction);
     if (axis === "feeling") setStep("role");
-    else if (axis === "role") setStep("avoid");
+    else if (axis === "role") setStep("texture");
+    else if (axis === "texture") setStep("avoid");
     else if (axis === "avoid") setStep("loading");
     else setStep("loading");
   };
@@ -232,6 +210,7 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
     if (!removed) return;
     if (removed.axis === "feeling") setAnswers((a) => ({ ...a, feeling: undefined }));
     if (removed.axis === "role") setAnswers((a) => ({ ...a, role: undefined }));
+    if (removed.axis === "texture") setAnswers((a) => ({ ...a, texture: undefined }));
     if (removed.axis === "avoid")
       setAnswers((a) => ({ ...a, avoid: a.avoid?.filter((x) => `avoid-${x}` !== id) }));
     if (removed.axis === "familiarity")
@@ -273,14 +252,14 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
           ? undefined
           : { current: stepIndex, total: TOTAL_DOTS }
       }
-      loadingLine={loadingLines[step]}
+      loadingLine={step === "loading" ? matchPrompts.loading : reaction}
       onBack={goBack}
       onSkip={
-        step === "feeling" || step === "role" || step === "avoid"
+        step === "feeling" || step === "role" || step === "texture" || step === "avoid"
           ? skip
           : undefined
       }
-      skipLabel="just meet them"
+      skipLabel={matchActions.skip}
     >
       <AnimatePresence mode="wait">
         {step === "intro" ? (
@@ -291,13 +270,13 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
             exit={{ opacity: 0 }}
             className="flex flex-col gap-3"
           >
-            <HostLine>Okay. A few quick things first.</HostLine>
+            <HostLine>{matchPrompts.intro}</HostLine>
             <button
               type="button"
               onClick={() => setStep("feeling")}
               className="inline-flex items-center gap-1.5 self-start rounded-pill border border-coral/60 bg-coral/12 px-3.5 py-1.5 text-[13px] text-coral hover:border-coral hover:bg-coral/20"
             >
-              start <ArrowRight size={14} />
+              {matchActions.start} <ArrowRight size={14} />
             </button>
           </motion.div>
         ) : null}
@@ -305,11 +284,11 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
         {step === "feeling" ? (
           <motion.div key="feeling" {...fade} className="flex flex-col gap-3">
             <FunnelStep
-              question="When they answer, what should you feel?"
-              choices={feelingChoices}
+              question={matchPrompts.feeling}
+              choices={matchChoices.feeling}
               onSubmit={handleFeeling}
               onFreeText={handleFreeText("feeling")}
-              freeTextPlaceholder="say it your way"
+              freeTextPlaceholder={matchPrompts.freeTextPlaceholder}
             />
           </motion.div>
         ) : null}
@@ -319,12 +298,23 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
             <FunnelStep
               question={
                 answers.feeling
-                  ? "Should they lead, listen, tease, or ask?"
-                  : "Should they ask first, or just be there?"
+                  ? matchPrompts.roleWithFeeling
+                  : matchPrompts.roleFallback
               }
-              choices={roleChoices}
+              choices={matchChoices.role}
               onSubmit={handleRole}
               onFreeText={handleFreeText("role")}
+            />
+          </motion.div>
+        ) : null}
+
+        {step === "texture" ? (
+          <motion.div key="texture" {...fade} className="flex flex-col gap-3">
+            <FunnelStep
+              question={matchPrompts.texture}
+              choices={matchChoices.texture}
+              onSubmit={handleTexture}
+              onFreeText={handleFreeText("texture")}
             />
           </motion.div>
         ) : null}
@@ -332,8 +322,8 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
         {step === "avoid" ? (
           <motion.div key="avoid" {...fade} className="flex flex-col gap-3">
             <FunnelStep
-              question="What should the first conversation not do?"
-              choices={avoidChoices}
+              question={matchPrompts.avoid}
+              choices={matchChoices.avoid}
               multiSelect
               maxSelect={3}
               onSubmit={handleAvoid}
@@ -345,8 +335,8 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
         {step === "familiarity" ? (
           <motion.div key="fam" {...fade} className="flex flex-col gap-3">
             <FunnelStep
-              question="Do you want familiar, surprising, or a little dangerous?"
-              choices={familiarityChoices}
+              question={matchPrompts.familiarity}
+              choices={matchChoices.familiarity}
               onSubmit={handleFamiliarity}
             />
           </motion.div>
@@ -354,7 +344,7 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
 
         {step === "loading" ? (
           <motion.div key="loading" {...fade}>
-            <HostLine variant="secondary">putting it together…</HostLine>
+            <HostLine variant="secondary">{matchPrompts.loading}</HostLine>
           </motion.div>
         ) : null}
 
@@ -395,10 +385,10 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
 
         {step === "rejection-diagnostic" ? (
           <motion.div key="rej" {...fade} className="flex flex-col gap-3">
-            <HostLine>Good. That helps. Was it the look, the voice, or the energy?</HostLine>
+            <HostLine>{matchPrompts.rejectionDiagnostic}</HostLine>
             <FunnelStep
               question=""
-              choices={rejectionAxisChoices}
+              choices={matchChoices.rejectionAxis}
               onSubmit={handleRejection}
             />
           </motion.div>
@@ -406,14 +396,14 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
 
         {step === "create-handoff" ? (
           <motion.div key="handoff" {...fade} className="flex flex-col gap-3">
-            <HostLine>{"That's two passes. Want to describe them instead?"}</HostLine>
+            <HostLine>{matchPrompts.createHandoff}</HostLine>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => router.push("/create")}
                 className="inline-flex items-center gap-1.5 rounded-pill border border-coral/60 bg-coral/12 px-3.5 py-1.5 text-[13px] text-coral hover:border-coral hover:bg-coral/20"
               >
-                describe someone <ArrowRight size={14} />
+                {matchActions.describeSomeone} <ArrowRight size={14} />
               </button>
               <button
                 type="button"
@@ -424,14 +414,14 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
                 }}
                 className="inline-flex items-center gap-1.5 rounded-pill border border-line bg-copy/8 px-3.5 py-1.5 text-[13px] text-copy hover:bg-copy/14"
               >
-                one more try
+                {matchActions.oneMoreTry}
               </button>
               <button
                 type="button"
                 onClick={() => router.push("/gallery")}
                 className="inline-flex items-center gap-1.5 rounded-pill border border-line bg-copy/8 px-3.5 py-1.5 text-[13px] text-copy hover:bg-copy/14"
               >
-                see everyone
+                {matchActions.seeEveryone}
               </button>
             </div>
           </motion.div>
@@ -445,7 +435,7 @@ const fade = {
   initial: { opacity: 0, y: 6 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -4 },
-  transition: { duration: 0.32, ease: "easeOut" as const },
+  transition: { duration: motionSec(0.32), ease: "easeOut" as const },
 };
 
 function stepToDotIndex(step: Step): number {
@@ -455,14 +445,16 @@ function stepToDotIndex(step: Step): number {
       return 0;
     case "role":
       return 1;
-    case "avoid":
+    case "texture":
       return 2;
+    case "avoid":
+      return 3;
     case "familiarity":
     case "loading":
     case "reveal":
     case "rejection-diagnostic":
     case "create-handoff":
-      return 3;
+      return 4;
   }
 }
 
@@ -491,7 +483,9 @@ function RevealActions({
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-card border border-line/60 bg-copy/[0.05] p-3.5">
-        <p className="text-[12px] uppercase tracking-[0.16em] text-copy-faint">Why her</p>
+        <p className="text-[12px] uppercase tracking-[0.16em] text-copy-faint">
+          {matchRevealLabels.whyHer}
+        </p>
         <ul className="mt-2 space-y-1.5">
           {bullets.map((b, i) => (
             <li key={i} className="text-[14px] leading-[1.5] text-copy/90">
@@ -502,7 +496,9 @@ function RevealActions({
       </div>
 
       <div className="rounded-card border border-line/60 bg-copy/[0.04] p-3.5">
-        <p className="text-[12px] uppercase tracking-[0.16em] text-copy-faint">First message</p>
+        <p className="text-[12px] uppercase tracking-[0.16em] text-copy-faint">
+          {matchRevealLabels.firstMessage}
+        </p>
         <p className="mt-2 text-[15px] italic leading-[1.5] text-copy">
           “{companion.openers.match}”
         </p>
@@ -514,21 +510,21 @@ function RevealActions({
           onClick={onSayHi}
           className="inline-flex items-center gap-1.5 rounded-pill bg-coral px-4 py-2 text-[14px] font-semibold text-ink hover:bg-rose"
         >
-          <MessageCircle size={14} /> say hi
+          <MessageCircle size={14} /> {matchActions.sayHi}
         </button>
         <button
           type="button"
           onClick={onShowAnother}
           className="inline-flex items-center gap-1.5 rounded-pill border border-line bg-copy/8 px-3.5 py-1.5 text-[13px] text-copy hover:bg-copy/14"
         >
-          <Compass size={14} /> show me another
+          <Compass size={14} /> {matchActions.showAnother}
         </button>
         <button
           type="button"
           onClick={onOpenEveryone}
           className="inline-flex items-center gap-1.5 rounded-pill border border-line bg-copy/8 px-3.5 py-1.5 text-[13px] text-copy hover:bg-copy/14"
         >
-          <Users size={14} /> open everyone
+          <Users size={14} /> {matchActions.openEveryone}
         </button>
       </div>
     </div>

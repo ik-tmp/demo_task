@@ -3,8 +3,11 @@
 import { useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { surfaceDialogue } from "@/data/surface-dialogue";
 import { cn } from "@/lib/utils";
 import { Chip } from "@/components/ui/chip";
+
+const commonCopy = surfaceDialogue.common;
 
 export type StepChoice = {
   id: string;
@@ -42,7 +45,7 @@ export function FunnelStep({
   maxSelect,
   onSubmit,
   onFreeText,
-  freeTextPlaceholder = "say it your way",
+  freeTextPlaceholder = commonCopy.freeTextPlaceholder,
   className,
 }: FunnelStepProps) {
   const [selected, setSelected] = useState<string[]>(initialSelected);
@@ -76,7 +79,11 @@ export function FunnelStep({
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
-      <p className="text-[17px] leading-[1.35] text-copy sm:text-[19px]">{question}</p>
+      {question ? (
+        <p className="text-[17px] leading-[1.35] text-copy sm:text-[19px]">
+          {question}
+        </p>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         <AnimatePresence initial={false}>
@@ -119,7 +126,7 @@ export function FunnelStep({
             "disabled:pointer-events-none disabled:opacity-40",
           )}
         >
-          continue
+          {commonCopy.continue}
           <ArrowRight size={14} />
         </button>
       ) : null}
@@ -130,7 +137,7 @@ export function FunnelStep({
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={freeTextPlaceholder}
-          aria-label="say it your way"
+          aria-label={commonCopy.freeTextPlaceholder}
           className={cn(
             "flex-1 rounded-pill border border-line bg-copy/5 px-4 py-2 text-[14px] text-copy placeholder:text-copy-faint",
             "focus:border-copy/35 focus:outline-none",
@@ -139,7 +146,7 @@ export function FunnelStep({
         <button
           type="submit"
           disabled={!text.trim()}
-          aria-label="send"
+          aria-label={commonCopy.sendAria}
           className={cn(
             "grid h-9 w-9 place-items-center rounded-full border border-line bg-copy/8 text-copy transition",
             "hover:bg-copy/14 disabled:pointer-events-none disabled:opacity-40",

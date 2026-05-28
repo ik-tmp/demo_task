@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { prefersReducedMotion } from "@/lib/motion";
 
 type TypingTextProps = {
   text: string;
@@ -16,14 +17,28 @@ type TypingTextProps = {
  */
 export function TypingText({ text, speed = 30, onDone }: TypingTextProps) {
   const [shown, setShown] = useState("");
+  // Keep onDone out of the typing effect's deps so a parent re-render
+  // mid-type never restarts the animation.
+  const onDoneRef = useRef(onDone);
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  });
 
   useEffect(() => {
     // All setState calls are wrapped in async ticks, so the lint rule
     // about synchronous setState-in-effect is satisfied.
+    // Reduced motion: show the whole line at once, then signal done.
+    if (prefersReducedMotion()) {
+      const done = window.setTimeout(() => {
+        setShown(text);
+        onDoneRef.current?.();
+      }, 0);
+      return () => window.clearTimeout(done);
+    }
     let i = 0;
     const tick = () => {
       if (i > text.length) {
-        onDone?.();
+        onDoneRef.current?.();
         return;
       }
       setShown(text.slice(0, i));
@@ -34,7 +49,7 @@ export function TypingText({ text, speed = 30, onDone }: TypingTextProps) {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [text, speed, onDone]);
+  }, [text, speed]);
 
   return <span aria-live="polite">{shown}</span>;
 }

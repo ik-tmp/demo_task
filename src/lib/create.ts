@@ -1,4 +1,5 @@
 import type { Companion } from "@/types/companion";
+import { createDialogue } from "@/data/create-dialogue";
 
 /**
  * Create-funnel logic. The visual generation moment (in-progress vignette
@@ -121,6 +122,12 @@ export type LookId =
   | "older-soul"
   | "classic-beauty"
   | "unusual-but-grounded";
+export type BoundaryId =
+  | "slow-trust"
+  | "not-flirty"
+  | "gentle-push"
+  | "no-roleplay"
+  | "no-fake-history";
 
 export type CreateAnswers = {
   feelings?: FeelingId[]; // multi-select up to 2
@@ -129,7 +136,7 @@ export type CreateAnswers = {
   looks?: LookId[]; // multi-select up to 2
   name?: string;
   pace?: "quick" | "unhurried";
-  boundaries?: string;
+  boundaries?: BoundaryId | string;
   context?: string;
 };
 
@@ -217,7 +224,7 @@ export function composePremise(answers: CreateAnswers, name: string): string {
   const f = answers.feelings?.[0];
   const role = answers.role;
   if (f && role) {
-    return `${capitalize(feelingPhrase[f])}, ${role}-mode. ${name} listens before she suggests.`;
+    return `${capitalize(feelingPhrase[f])} ${role}. ${name} listens before she suggests.`;
   }
   if (f) return `${capitalize(feelingPhrase[f])}. ${name} keeps things grounded.`;
   return `${name} is here when you need her.`;
@@ -230,6 +237,32 @@ export function composeFeelingClause(answers: CreateAnswers): string {
   return `${feelingPhrase[f[0]]} and ${feelingPhrase[f[1]]}`;
 }
 
+export function composeShapedItems(answers: CreateAnswers): string[] {
+  const items: string[] = [];
+  const copy = createDialogue.shapedLine;
+  if (answers.feelings) items.push(copy.feelings(composeFeelingClause(answers)));
+  if (answers.role) items.push(copy.role(answers.role));
+  if (answers.voice) items.push(copy.voice(answers.voice));
+  if (answers.looks) {
+    items.push(copy.looks(answers.looks.map((l) => l.replace(/-/g, " ")).join(" + ")));
+  }
+  if (answers.pace) items.push(copy.pace(answers.pace));
+  if (answers.boundaries) {
+    const boundary = String(answers.boundaries);
+    const boundaryLabel =
+      createDialogue.choices.boundaries.find((c) => c.id === boundary)?.label ??
+      boundary.replace(/-/g, " ");
+    items.push(copy.boundaries(boundaryLabel));
+  }
+  if (answers.context) items.push(copy.context(truncate(answers.context, 60)));
+  return items;
+}
+
+export function reactionForCreate(axis: string, id: string): string | null {
+  const reactions = createDialogue.reactions as Record<string, Record<string, string>>;
+  return reactions[axis]?.[id] ?? null;
+}
+
 export function isConflicting(answers: CreateAnswers): boolean {
   // mischief + patience → pace question
   const f = answers.feelings ?? [];
@@ -238,6 +271,10 @@ export function isConflicting(answers: CreateAnswers): boolean {
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function truncate(s: string, n: number): string {
+  return s.length <= n ? s : `${s.slice(0, n - 1)}...`;
 }
 
 // Free-text skip parser — looks for role/voice/boundary cues so the
@@ -256,8 +293,11 @@ export function parseFreeText(text: string): Partial<CreateAnswers> {
   else if (/\bwarm\b/.test(t)) out.voice = "warm";
   else if (/\bcurious\b/.test(t)) out.voice = "curious";
 
-  if (/doesn'?t flirt|no flirt|not flirty/.test(t)) out.boundaries = "no flirt";
-  if (/no roleplay|doesn'?t roleplay/.test(t)) out.boundaries = "no roleplay";
+  if (/slow trust|earn trust|take it slow/.test(t)) out.boundaries = "slow-trust";
+  if (/doesn'?t flirt|no flirt|not flirty|not flirt/.test(t)) out.boundaries = "not-flirty";
+  if (/gentle push|push me gently|challenge gently/.test(t)) out.boundaries = "gentle-push";
+  if (/no roleplay|doesn'?t roleplay|not roleplay/.test(t)) out.boundaries = "no-roleplay";
+  if (/no fake history|no shared history|don'?t pretend we know/.test(t)) out.boundaries = "no-fake-history";
 
   if (/\bwarmth\b|warmer/.test(t)) out.feelings = ["warmth"];
   else if (/\bcalm\b|calmer/.test(t)) out.feelings = ["calm"];

@@ -1,15 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageCircle, Users } from "lucide-react";
+import { ArrowRight, MessageCircle, Users } from "lucide-react";
+import { surfaceDialogue } from "@/data/surface-dialogue";
 import type { Companion } from "@/types/companion";
+import { PREVIEW_QA_MAX_TURNS, previewAnswer } from "@/lib/browse";
+import { motionSec } from "@/lib/motion";
 import { FunnelShell } from "@/components/funnel/funnel-shell";
 import { HostLine } from "@/components/funnel/host-line";
 import { Chip } from "@/components/ui/chip";
 
-type Step = "intro" | "samples" | "more";
+type Step = "intro" | "samples";
+type QA = { id: number; q: string; a: string };
+const browseCopy = surfaceDialogue.browse;
+const commonCopy = surfaceDialogue.common;
 
 type VignetteFunnelProps = {
   companion: Companion;
@@ -18,12 +24,25 @@ type VignetteFunnelProps = {
 export function VignetteFunnel({ companion }: VignetteFunnelProps) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("intro");
+  const [qa, setQa] = useState<QA[]>([]);
+  const [ask, setAsk] = useState("");
+  const turnRef = useRef(0);
 
   const sayHi = () => router.push(`/chat/${companion.id}?from=browse`);
   const tellMore = () => setStep("samples");
   const seeEveryone = () => router.push("/gallery");
   const showSofter = () => router.push("/gallery?softer=1");
   const showSharper = () => router.push("/gallery?sharper=1");
+
+  const atQaLimit = qa.length >= PREVIEW_QA_MAX_TURNS;
+  const submitAsk = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || atQaLimit) return;
+    const answer = previewAnswer(companion, turnRef.current);
+    turnRef.current += 1;
+    setQa((cur) => [...cur, { id: turnRef.current, q: trimmed, a: answer }]);
+    setAsk("");
+  };
 
   return (
     <FunnelShell
@@ -42,24 +61,20 @@ export function VignetteFunnel({ companion }: VignetteFunnelProps) {
               </p>
               <p className="mt-1.5 text-[15px] text-copy/85">{companion.premise}</p>
             </div>
-            <HostLine variant="secondary">
-              {hostIntro(companion)}
-            </HostLine>
+            <HostLine variant="secondary">{browseCopy.hostIntro(companion)}</HostLine>
             <div className="flex flex-wrap items-center gap-2">
               <PrimaryChip onClick={sayHi} icon={<MessageCircle size={14} />}>
-                say hi to {companion.name}
+                {browseCopy.actions.sayHi(companion.name)}
               </PrimaryChip>
-              <Chip onClick={tellMore}>tell me more</Chip>
-              <Chip onClick={seeEveryone}>see everyone</Chip>
+              <Chip onClick={tellMore}>{browseCopy.actions.tellMore}</Chip>
+              <Chip onClick={seeEveryone}>{browseCopy.actions.seeEveryone}</Chip>
             </div>
           </motion.div>
         ) : null}
 
         {step === "samples" ? (
           <motion.div key="samples" {...fade} className="flex flex-col gap-4">
-            <HostLine variant="secondary">
-              {`Three things she might open with.`}
-            </HostLine>
+            <HostLine variant="secondary">{browseCopy.samplesIntro}</HostLine>
             <ul className="space-y-2">
               {companion.sampleLines.map((line, i) => (
                 <li
@@ -70,18 +85,69 @@ export function VignetteFunnel({ companion }: VignetteFunnelProps) {
                 </li>
               ))}
             </ul>
+
             <HostLine variant="secondary">
-              {`Her voice is ${companion.voiceDescribedAs}. You can interrupt her any time.`}
+              {browseCopy.voicePrompt(companion.voiceDescribedAs)}
             </HostLine>
+
+            {qa.length > 0 ? (
+              <div className="flex flex-col gap-2.5">
+                {qa.map((item) => (
+                  <div key={item.id} className="flex flex-col gap-2.5">
+                    <div className="max-w-[88%] self-end rounded-tile border border-transparent bg-copy px-3.5 py-2.5 text-[14px] leading-[1.5] text-ink">
+                      {item.q}
+                    </div>
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.26, ease: "easeOut" }}
+                      className="max-w-[88%] self-start rounded-tile border border-line bg-copy/[0.07] px-3.5 py-2.5 text-[14px] italic leading-[1.5] text-copy"
+                    >
+                      {item.a}
+                    </motion.div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {!atQaLimit ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submitAsk(ask);
+                }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  value={ask}
+                  onChange={(e) => setAsk(e.target.value)}
+                  placeholder={browseCopy.askPlaceholder(companion.name)}
+                  aria-label={browseCopy.askPlaceholder(companion.name)}
+                  className="flex-1 rounded-pill border border-line bg-copy/5 px-4 py-2 text-[13px] text-copy placeholder:text-copy-faint focus:border-copy/35 focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={!ask.trim()}
+                  aria-label={commonCopy.sendAria}
+                  className="grid h-9 w-9 place-items-center rounded-full border border-line bg-copy/8 text-copy transition hover:bg-copy/14 disabled:opacity-40"
+                >
+                  <ArrowRight size={16} />
+                </button>
+              </form>
+            ) : (
+              <HostLine variant="secondary">{browseCopy.qaLimitPrompt}</HostLine>
+            )}
+
             <div className="flex flex-wrap items-center gap-2">
               <PrimaryChip onClick={sayHi} icon={<MessageCircle size={14} />}>
-                say hi to {companion.name}
+                {browseCopy.actions.sayHi(companion.name)}
               </PrimaryChip>
-              <Chip onClick={showSofter}>show me softer</Chip>
-              <Chip onClick={showSharper}>show me sharper</Chip>
+              <Chip onClick={showSofter}>{browseCopy.actions.showSofter}</Chip>
+              <Chip onClick={showSharper}>{browseCopy.actions.showSharper}</Chip>
               <Chip onClick={seeEveryone} className="inline-flex items-center gap-1.5">
                 <Users size={14} />
-                see everyone
+                {browseCopy.actions.seeEveryone}
               </Chip>
             </div>
           </motion.div>
@@ -89,20 +155,6 @@ export function VignetteFunnel({ companion }: VignetteFunnelProps) {
       </AnimatePresence>
     </FunnelShell>
   );
-}
-
-function hostIntro(c: Companion): string {
-  // Simple per-energy host intro voice.
-  switch (c.energy) {
-    case "listener":
-      return `${c.name}. Reads a lot, talks slow. Asks good questions and actually waits for the answer.`;
-    case "provoker":
-      return `${c.name}. Quick. She'll find the part of the story you weren't going to tell.`;
-    case "guide":
-      return `${c.name}. Knows where she's going. Walks beside you, not in front.`;
-    case "confidant":
-      return `${c.name}. The long version, every time. She wants the whole shape.`;
-  }
 }
 
 function PrimaryChip({
@@ -130,5 +182,5 @@ const fade = {
   initial: { opacity: 0, y: 6 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -4 },
-  transition: { duration: 0.28, ease: "easeOut" as const },
+  transition: { duration: motionSec(0.28), ease: "easeOut" as const },
 };

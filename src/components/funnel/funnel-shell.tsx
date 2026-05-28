@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { surfaceDialogue } from "@/data/surface-dialogue";
 import { cn } from "@/lib/utils";
 import { FaceSafeFrame } from "@/components/layout/face-safe-frame";
 import { PortraitStage } from "@/components/layout/portrait-stage";
@@ -9,6 +10,8 @@ import { PillRow } from "./pill";
 import { DotTrail } from "./dot-trail";
 import { NarratedLoading } from "./narrated-loading";
 import type { FaceSafeRegion } from "@/types/companion";
+
+const commonCopy = surfaceDialogue.common;
 
 export type FunnelPortrait = {
   src: string;
@@ -51,7 +54,7 @@ export function FunnelShell({
   loadingLine = null,
   onBack,
   onSkip,
-  skipLabel = "just meet them",
+  skipLabel = commonCopy.defaultSkip,
   children,
   className,
 }: FunnelShellProps) {
@@ -167,11 +170,11 @@ function ChatBody({
           <button
             type="button"
             onClick={onBack}
-            aria-label="back"
+            aria-label={commonCopy.back}
             className="inline-flex items-center gap-1 rounded-pill px-2 py-1 text-[13px] text-copy-muted transition hover:text-copy"
           >
             <ArrowLeft size={14} />
-            back
+            {commonCopy.back}
           </button>
         ) : (
           <Link
@@ -179,7 +182,7 @@ function ChatBody({
             className="inline-flex items-center gap-1 rounded-pill px-2 py-1 text-[13px] text-copy-muted transition hover:text-copy"
           >
             <ArrowLeft size={14} />
-            reel
+            {commonCopy.reel}
           </Link>
         )}
         {progress ? (

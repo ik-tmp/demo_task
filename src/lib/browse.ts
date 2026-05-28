@@ -1,4 +1,4 @@
-import type { Companion, TagAxis } from "@/types/companion";
+import type { Companion, CompanionEnergy, TagAxis } from "@/types/companion";
 
 export type RefinementId =
   | "softer"
@@ -98,6 +98,41 @@ export function rankForGallery(
       score: refinementScore(c, filters.refinements) + queryScore(c, filters.query),
     }))
     .sort((a, b) => b.score - a.score);
+}
+
+// ---- Browse preview Q&A -------------------------------------------------
+// Deterministic in-voice "host" answers for the teaser exchange before the
+// real chat (DIRECTION-B §6 / M4: free text → one-line in-voice answer,
+// max ~3 turns). Cycles by turn so each question gets a fresh line.
+
+const previewAnswersByEnergy: Record<CompanionEnergy, string[]> = {
+  listener: [
+    "I'd probably ask what you're reading, then actually listen to the answer.",
+    "I'm better in the quiet than the noise. You'll see.",
+    "Ask me anything — I'll take my time with it.",
+  ],
+  provoker: [
+    "I'd make you laugh, then ask the question you're avoiding. It's a whole bit.",
+    "Careful — I answer honestly. It's a bit of a problem.",
+    "Try me. I'm quick, but I land where it counts.",
+  ],
+  guide: [
+    "I'd ask where your head's at, then walk you there. No lectures.",
+    "I don't do small talk for long. Fair warning.",
+    "Ask. I've probably walked that street before.",
+  ],
+  confidant: [
+    "I'd want the long version. I keep the thread, so don't worry about rambling.",
+    "Tell me where it starts. I'll stay with it.",
+    "I'm slow on purpose. The good stuff doesn't rush.",
+  ],
+};
+
+export const PREVIEW_QA_MAX_TURNS = 3;
+
+export function previewAnswer(c: Companion, turn: number): string {
+  const pool = previewAnswersByEnergy[c.energy];
+  return pool[turn % pool.length];
 }
 
 export function describeActiveFilters(filters: GalleryFilters): string | null {

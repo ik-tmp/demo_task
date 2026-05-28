@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { snapshot, expectFaceSafeIntact } from "./helpers";
+import { snapshot, expectFaceSafeIntact, driveToPaywall } from "./helpers";
+
+// Collapse JS-paced animations (typing, narrated delays) to zero so the
+// suite drives the flows at full speed. The app honors prefers-reduced-motion.
+test.beforeEach(async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+});
 
 test.describe("Direction B — M1 Reel", () => {
   test("reel renders with companion + premise + affordances", async ({ page }, info) => {
@@ -57,10 +63,11 @@ test.describe("Direction B — M3 Match", () => {
     await page.getByRole("button", { name: /^start$/ }).click();
     await page.getByRole("button", { name: /^calmer$/ }).click();
     await page.getByRole("button", { name: /^listen$/ }).click();
+    await page.getByRole("button", { name: /^quiet and close$/ }).click();
     await page.getByRole("button", { name: /^not fix$/ }).click();
     await page.getByRole("button", { name: /^continue$/ }).click();
     // Q4 (familiarity) may fire when iris/sasha tie — handle it.
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(150);
     const famVisible = await page
       .getByRole("button", { name: /^familiar$/ })
       .isVisible()
@@ -87,7 +94,7 @@ test.describe("Direction B — M3 Match", () => {
     await page.getByRole("button", { name: /^start$/ }).click();
     await page.getByRole("button", { name: /^calmer$/ }).click();
     // Wait for the next step to render — guarantees the previous step has unmounted.
-    await expect(page.getByText(/lead, listen, tease, or ask/i)).toBeVisible();
+    await expect(page.getByText(/what should she do first/i)).toBeVisible();
     // Pill persists with the chosen answer.
     await expect(page.getByText("calmer", { exact: true })).toBeVisible();
   });
@@ -97,9 +104,10 @@ test.describe("Direction B — M3 Match", () => {
     await page.getByRole("button", { name: /^start$/ }).click();
     await page.getByRole("button", { name: /^calmer$/ }).click();
     await page.getByRole("button", { name: /^listen$/ }).click();
+    await page.getByRole("button", { name: /^quiet and close$/ }).click();
     await page.getByRole("button", { name: /^not fix$/ }).click();
     await page.getByRole("button", { name: /^continue$/ }).click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(150);
     const famVisible = await page
       .getByRole("button", { name: /^familiar$/ })
       .isVisible()
@@ -178,7 +186,7 @@ test.describe("Direction B — M5 First Chat + Paywall", () => {
 
   test("from=match opens match opener", async ({ page }) => {
     await page.goto("/chat/iris?from=match");
-    await expect(page.getByText(/no fixing, got it/i)).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(/won't try to fix your day/i)).toBeVisible({ timeout: 8000 });
   });
 
   test("face-safe intact during chat", async ({ page }) => {
@@ -190,37 +198,28 @@ test.describe("Direction B — M5 First Chat + Paywall", () => {
   test("paywall surfaces after preview exchanges", async ({ page }, info) => {
     await page.goto("/chat/iris?from=match");
     // Wait for opener to finish typing.
-    await expect(page.getByText(/no fixing, got it/i)).toBeVisible({ timeout: 8000 });
-    // Use suggested replies to drive the conversation forward 3 times.
-    for (let i = 0; i < 3; i += 1) {
-      const suggested = page.getByRole("button", { name: /long one|tell me about you|not sure/i }).first();
-      await suggested.waitFor({ state: "visible", timeout: 5000 });
-      await suggested.click();
-      // Give the companion time to respond.
-      await page.waitForTimeout(1800);
-    }
+    await expect(page.getByText(/won't try to fix your day/i)).toBeVisible({ timeout: 8000 });
+    // Drive the branching conversation to the paywall beat by clicking
+    // whichever suggested reply is offered each beat.
+    await driveToPaywall(page);
     await expect(page.getByText(/keep talking with iris/i)).toBeVisible({
-      timeout: 5000,
+      timeout: 8000,
     });
     await snapshot(page, info, "b-09-paywall");
   });
 
   test("from=create opens create opener", async ({ page }) => {
     await page.goto("/chat/iris?from=create");
-    await expect(page.getByText(/you said warm and patient/i)).toBeVisible({
+    await expect(page.getByText(/asked for someone warm and patient/i)).toBeVisible({
       timeout: 8000,
     });
   });
 
   test("paywall continue → mock success state", async ({ page }) => {
     await page.goto("/chat/iris?from=match");
-    await expect(page.getByText(/no fixing, got it/i)).toBeVisible({ timeout: 8000 });
-    for (let i = 0; i < 3; i += 1) {
-      const suggested = page.getByRole("button", { name: /long one|tell me about you|not sure/i }).first();
-      await suggested.waitFor({ state: "visible", timeout: 5000 });
-      await suggested.click();
-      await page.waitForTimeout(1800);
-    }
+    await expect(page.getByText(/won't try to fix your day/i)).toBeVisible({ timeout: 8000 });
+    await driveToPaywall(page);
+    await expect(page.getByText(/keep talking with iris/i)).toBeVisible({ timeout: 8000 });
     await page.getByRole("button", { name: /^continue$/ }).click();
     await expect(page.getByText(/you're in. keep going/i)).toBeVisible();
   });
@@ -239,7 +238,11 @@ test.describe("Direction B — M6 Create", () => {
     // Step 4 — look (multi-select)
     await page.getByRole("button", { name: /^warm apartment$/i }).click();
     await page.getByRole("button", { name: /^continue$/i }).click();
-    // Step 5 — name (pick suggestion)
+    // Step 5 — boundary
+    await page.getByRole("button", { name: /^warm, not flirty$/i }).click();
+    // Step 6 — context
+    await page.getByRole("button", { name: /^skip ahead$/i }).click();
+    // Step 7 — name (pick suggestion)
     const nameBtn = page.getByRole("button", { name: /^Noa$|^Sasha$|^Mira$/i }).first();
     await nameBtn.click();
     // Reveal renders the "What shaped them" panel.
@@ -261,6 +264,8 @@ test.describe("Direction B — M6 Create", () => {
     await page.getByRole("button", { name: /just got in/i }).click();
     await page.getByRole("button", { name: /^warm apartment$/i }).click();
     await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^warm, not flirty$/i }).click();
+    await page.getByRole("button", { name: /^skip ahead$/i }).click();
     await page.getByRole("button", { name: /^Noa$|^Sasha$|^Mira$/i }).first().click();
     await expect(page.getByRole("button", { name: /^meet /i })).toBeVisible({ timeout: 5000 });
     await page.getByRole("button", { name: /^meet /i }).click();

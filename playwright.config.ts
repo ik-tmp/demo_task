@@ -8,6 +8,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   reporter: [["list"]],
+  timeout: 15_000,
   use: {
     baseURL: BASE_URL,
     viewport: { width: 1280, height: 800 },

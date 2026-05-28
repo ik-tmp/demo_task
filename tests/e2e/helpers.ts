@@ -17,6 +17,26 @@ export async function snapshot(page: Page, info: TestInfo, name: string) {
 }
 
 /**
+ * Drives the first-chat dialogue forward by clicking whichever suggested
+ * reply is offered, until the paywall surfaces. The conversation branches
+ * and reconverges, so the exact path varies — this just clicks the first
+ * available reply each time one appears. Polls rather than sleeping a
+ * fixed amount, so it returns the moment the paywall shows.
+ */
+export async function driveToPaywall(page: Page, maxMs = 25000) {
+  const paywall = page.getByText(/keep talking with/i);
+  const deadline = Date.now() + maxMs;
+  while (Date.now() < deadline) {
+    if (await paywall.isVisible().catch(() => false)) return;
+    const reply = page.locator("[data-suggested-reply]").first();
+    if (await reply.isVisible().catch(() => false)) {
+      await reply.click().catch(() => {});
+    }
+    await page.waitForTimeout(150);
+  }
+}
+
+/**
  * Asserts that no chat sheet (data-chat-sheet) overlaps the face-safe
  * region of its FaceSafeFrame parent. Backs DIRECTION-B §13.
  */

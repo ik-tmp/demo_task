@@ -4,25 +4,30 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, MessageCircle } from "lucide-react";
+import { createDialogue } from "@/data/create-dialogue";
+import { surfaceDialogue } from "@/data/surface-dialogue";
 import { cn } from "@/lib/utils";
 import type { Companion } from "@/types/companion";
 import {
   type CreateAnswers,
+  type BoundaryId,
   type FeelingId,
   type LookId,
   type RoleId,
   type VoiceId,
   IN_PROGRESS_STAGES,
-  composeFeelingClause,
   composePremise,
+  composeShapedItems,
   isConflicting,
   parseFreeText,
   pickFallbackCompanion,
   pickRevealAsset,
+  reactionForCreate,
   suggestNames,
 } from "@/lib/create";
+import { motionMs, motionSec } from "@/lib/motion";
 import { FunnelShell } from "@/components/funnel/funnel-shell";
-import { FunnelStep, type StepChoice } from "@/components/funnel/funnel-step";
+import { FunnelStep } from "@/components/funnel/funnel-step";
 import { HostLine } from "@/components/funnel/host-line";
 
 type Step =
@@ -50,38 +55,13 @@ const BLUR_BY_STEP: Record<Step, number> = {
   reveal: 0,
 };
 
-const feelingChoices: StepChoice[] = [
-  { id: "warmth", label: "warmth" },
-  { id: "nerve", label: "nerve" },
-  { id: "patience", label: "patience" },
-  { id: "mischief", label: "mischief" },
-  { id: "honesty", label: "honesty" },
-  { id: "calm", label: "calm" },
-];
-const roleChoices: StepChoice[] = [
-  { id: "companion", label: "companion" },
-  { id: "muse", label: "muse" },
-  { id: "mentor", label: "mentor" },
-  { id: "confidant", label: "confidant" },
-  { id: "challenger", label: "challenger" },
-  { id: "storyteller", label: "storyteller" },
-];
-const lookChoices: StepChoice[] = [
-  { id: "soft-studio-light", label: "soft studio light" },
-  { id: "night-window", label: "night window" },
-  { id: "sharp-city-energy", label: "sharp city energy" },
-  { id: "warm-apartment", label: "warm apartment" },
-  { id: "older-soul", label: "older soul" },
-  { id: "classic-beauty", label: "classic beauty" },
-  { id: "unusual-but-grounded", label: "unusual but grounded" },
-];
-const paceChoices: StepChoice[] = [
-  { id: "quick", label: "quick" },
-  { id: "unhurried", label: "unhurried" },
-];
+const createChoices = createDialogue.choices;
+const createPrompts = createDialogue.prompts;
+const createRevealLabels = createDialogue.revealLabels;
+const commonCopy = surfaceDialogue.common;
 
 type Pill = { id: string; label: string; axis: string };
-const TOTAL_DOTS = 5;
+const TOTAL_DOTS = 7;
 
 type CreateFunnelProps = {
   companions: Companion[];
@@ -93,6 +73,7 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
   const [answers, setAnswers] = useState<CreateAnswers>({});
   const [pills, setPills] = useState<Pill[]>([]);
   const [chosenName, setChosenName] = useState<string>("");
+  const [reaction, setReaction] = useState<string | null>(null);
   const loadingTimerRef = useRef<number | null>(null);
 
   const candidate = useMemo(
@@ -113,7 +94,7 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
 
   // ---- Submit handlers ---------------------------------------------------
 
-  const addPill = (axis: string, ids: string[], lookup: StepChoice[]) => {
+  const addPill = (axis: string, ids: string[], lookup: Array<{ id: string; label: string }>) => {
     setPills((p) => [
       ...p.filter((x) => !ids.some((id) => x.id === `${axis}-${id}`)),
       ...ids.map((id) => ({
@@ -127,13 +108,15 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
   const handleFeeling = (ids: string[]) => {
     const f = ids as FeelingId[];
     setAnswers((a) => ({ ...a, feelings: f }));
-    addPill("feeling", ids, feelingChoices);
+    addPill("feeling", ids, createChoices.feeling);
+    setReaction(reactionForCreate("feeling", ids[0]));
     setStep("role");
   };
   const handleRole = (ids: string[]) => {
     const id = ids[0] as RoleId;
     setAnswers((a) => ({ ...a, role: id }));
-    addPill("role", [id], roleChoices);
+    addPill("role", [id], createChoices.role);
+    setReaction(reactionForCreate("role", id));
     setStep("voice");
   };
   const handleVoice = (id: VoiceId, label: string) => {
@@ -142,6 +125,7 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
       ...p.filter((x) => x.axis !== "voice"),
       { id: `voice-${id}`, label: `voice: ${label}`, axis: "voice" },
     ]);
+    setReaction(reactionForCreate("voice", id));
     // If conflicting feelings, pace fires here. Else go to look.
     if (isConflicting(answers)) setStep("pace");
     else setStep("look");
@@ -149,16 +133,42 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
   const handlePace = (ids: string[]) => {
     const id = ids[0] as "quick" | "unhurried";
     setAnswers((a) => ({ ...a, pace: id }));
-    addPill("pace", [id], paceChoices);
+    addPill("pace", [id], createChoices.pace);
+    setReaction(reactionForCreate("pace", id));
     setStep("look");
   };
   const handleLook = (ids: string[]) => {
     const l = ids as LookId[];
     setAnswers((a) => ({ ...a, looks: l }));
-    addPill("look", ids, lookChoices);
-    // Boundaries only if implied earlier (we'd have answers.boundaries already).
-    if (answers.boundaries) setStep("context");
-    else setStep("name");
+    addPill("look", ids, createChoices.look);
+    setReaction(reactionForCreate("look", ids[0]));
+    setStep("boundaries");
+  };
+  const handleBoundary = (ids: string[]) => {
+    const id = ids[0] as BoundaryId;
+    const label = createChoices.boundaries.find((c) => c.id === id)?.label ?? id;
+    setAnswers((a) => ({ ...a, boundaries: id }));
+    setPills((p) => [
+      ...p.filter((x) => x.axis !== "boundaries"),
+      { id: `boundaries-${id}`, label, axis: "boundaries" },
+    ]);
+    setReaction(reactionForCreate("boundaries", id));
+    setStep("context");
+  };
+  const handleBoundaryText = (text: string) => {
+    const parsed = parseFreeText(text);
+    const boundary = parsed.boundaries ?? text;
+    setAnswers((a) => ({ ...a, boundaries: boundary }));
+    setPills((p) => [
+      ...p.filter((x) => x.axis !== "boundaries"),
+      {
+        id: "boundaries-text",
+        label: `boundary: ${truncate(text, 22)}`,
+        axis: "boundaries",
+      },
+    ]);
+    setReaction(createPrompts.boundaryTextReaction);
+    setStep("context");
   };
   const handleContextSkip = () => setStep("name");
   const handleContextSubmit = (text: string) => {
@@ -176,9 +186,10 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
       ...p.filter((x) => x.axis !== "name"),
       { id: "name", label: name, axis: "name" },
     ]);
+    setReaction(null);
     setStep("loading");
     // Brief narrated loading, then reveal.
-    loadingTimerRef.current = window.setTimeout(() => setStep("reveal"), 1100);
+    loadingTimerRef.current = window.setTimeout(() => setStep("reveal"), motionMs(1100));
   };
 
   const handleFreeTextAt = (currentStep: Step) => (text: string) => {
@@ -218,10 +229,14 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
     next.context = text;
     setAnswers(next);
     setPills(newPills);
-    // Jump forward — to look if we don't have it, otherwise to name.
+    // Jump forward while still preserving the concrete shaping turns.
     if (currentStep === "feeling" || currentStep === "role" || currentStep === "voice") {
-      setStep(next.looks ? "name" : "look");
+      setStep(next.looks ? "boundaries" : "look");
     } else if (currentStep === "look") {
+      setStep("boundaries");
+    } else if (currentStep === "boundaries") {
+      setStep("context");
+    } else if (currentStep === "context") {
       setStep("name");
     }
   };
@@ -235,6 +250,8 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
     if (removed.axis === "voice") setAnswers((a) => ({ ...a, voice: undefined }));
     if (removed.axis === "look") setAnswers((a) => ({ ...a, looks: undefined }));
     if (removed.axis === "pace") setAnswers((a) => ({ ...a, pace: undefined }));
+    if (removed.axis === "boundaries")
+      setAnswers((a) => ({ ...a, boundaries: undefined }));
     if (removed.axis === "context") setAnswers((a) => ({ ...a, context: undefined }));
   };
 
@@ -285,18 +302,16 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
           ? undefined
           : { current: stepToDotIndex(step), total: TOTAL_DOTS }
       }
-      loadingLine={
-        step === "loading" ? "putting her together…" : null
-      }
+      loadingLine={step === "loading" ? createPrompts.loading : reaction}
       onBack={goBack}
     >
       <AnimatePresence mode="wait">
         {step === "feeling" ? (
           <motion.div key="feeling" {...fade} className="flex flex-col gap-3">
-            <HostLine>Tell me who you were hoping would answer. Start with the feeling.</HostLine>
+            <HostLine>{createPrompts.feelingHost}</HostLine>
             <FunnelStep
-              question="What should they bring into the room?"
-              choices={feelingChoices}
+              question={createPrompts.feelingQuestion}
+              choices={createChoices.feeling}
               multiSelect
               maxSelect={2}
               onSubmit={handleFeeling}
@@ -308,8 +323,8 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
         {step === "role" ? (
           <motion.div key="role" {...fade} className="flex flex-col gap-3">
             <FunnelStep
-              question="Who are they to you?"
-              choices={roleChoices}
+              question={createPrompts.roleQuestion}
+              choices={createChoices.role}
               onSubmit={handleRole}
               onFreeText={handleFreeTextAt("role")}
             />
@@ -327,10 +342,10 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
 
         {step === "pace" ? (
           <motion.div key="pace" {...fade} className="flex flex-col gap-3">
-            <HostLine variant="secondary">Mischief and patience together — how do those land?</HostLine>
+            <HostLine variant="secondary">{createPrompts.paceHost}</HostLine>
             <FunnelStep
-              question="Quick or unhurried?"
-              choices={paceChoices}
+              question={createPrompts.paceQuestion}
+              choices={createChoices.pace}
               onSubmit={handlePace}
             />
           </motion.div>
@@ -339,8 +354,8 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
         {step === "look" ? (
           <motion.div key="look" {...fade} className="flex flex-col gap-3">
             <FunnelStep
-              question="Pick a room and a light."
-              choices={lookChoices}
+              question={createPrompts.lookQuestion}
+              choices={createChoices.look}
               multiSelect
               maxSelect={2}
               onSubmit={handleLook}
@@ -349,22 +364,34 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
           </motion.div>
         ) : null}
 
+        {step === "boundaries" ? (
+          <motion.div key="boundaries" {...fade} className="flex flex-col gap-3">
+            <FunnelStep
+              question={createPrompts.boundariesQuestion}
+              choices={createChoices.boundaries}
+              onSubmit={handleBoundary}
+              onFreeText={handleBoundaryText}
+              freeTextPlaceholder={createPrompts.boundariesPlaceholder}
+            />
+          </motion.div>
+        ) : null}
+
         {step === "context" ? (
           <motion.div key="context" {...fade} className="flex flex-col gap-3">
-            <HostLine>What should they know before they say hello?</HostLine>
+            <HostLine>{createPrompts.contextHost}</HostLine>
             <FunnelStep
-              question=""
+              question={createPrompts.contextQuestion}
               choices={[]}
               onSubmit={() => {}}
               onFreeText={handleContextSubmit}
-              freeTextPlaceholder="anything — or skip"
+              freeTextPlaceholder={createPrompts.contextPlaceholder}
             />
             <button
               type="button"
               onClick={handleContextSkip}
               className="self-start text-[12px] text-copy-faint hover:text-copy-muted"
             >
-              skip ahead
+              {createPrompts.contextSkip}
             </button>
           </motion.div>
         ) : null}
@@ -379,7 +406,7 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
 
         {step === "loading" ? (
           <motion.div key="loading" {...fade}>
-            <HostLine variant="secondary">putting her together…</HostLine>
+            <HostLine variant="secondary">{createPrompts.loading}</HostLine>
           </motion.div>
         ) : null}
 
@@ -426,14 +453,13 @@ function stepToDotIndex(step: Step): number {
     case "voice":
     case "pace":
       return 2;
-    case "look":
-    case "boundaries":
-      return 3;
-    case "context":
+    case "look": return 3;
+    case "boundaries": return 4;
+    case "context": return 5;
     case "name":
     case "loading":
     case "reveal":
-      return 4;
+      return 6;
   }
 }
 
@@ -445,7 +471,7 @@ const fade = {
   initial: { opacity: 0, y: 6 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -4 },
-  transition: { duration: 0.32, ease: "easeOut" as const },
+  transition: { duration: motionSec(0.32), ease: "easeOut" as const },
 };
 
 // ---- Voice step -----------------------------------------------------------
@@ -459,22 +485,18 @@ function VoiceStep({
   onPick: (id: VoiceId, label: string) => void;
   onFreeText: (text: string) => void;
 }) {
-  const samples: Array<{ id: VoiceId; label: string; text: string }> = [
-    { id: "dry", label: "dry", text: "Hi. So how's your week going?" },
-    { id: "warm", label: "warm", text: "Hey, you. I just got in — how was your day?" },
-    { id: "curious", label: "curious", text: "Hi. What were you doing right before you opened this?" },
-  ];
+  const samples = createDialogue.voiceSamples;
   const [text, setText] = useState("");
   void companion;
   return (
     <motion.div {...fade} className="flex flex-col gap-3">
-      <HostLine>How do they sound? Pick the one that sounds right.</HostLine>
+      <HostLine>{createPrompts.voiceHost}</HostLine>
       <div className="flex flex-col gap-2">
         {samples.map((s) => (
           <button
             key={s.id}
             type="button"
-            onClick={() => onPick(s.id, s.label)}
+            onClick={() => onPick(s.id as VoiceId, s.label)}
             className={cn(
               "rounded-tile border border-line bg-copy/[0.05] px-3.5 py-2.5 text-left text-[14px] italic text-copy/90",
               "transition hover:border-copy/35 hover:bg-copy/10",
@@ -497,12 +519,12 @@ function VoiceStep({
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="or describe their voice"
+          placeholder={createPrompts.voicePlaceholder}
           className="flex-1 rounded-pill border border-line bg-copy/5 px-4 py-2 text-[13px] text-copy placeholder:text-copy-faint focus:border-copy/35 focus:outline-none"
         />
         <button
           type="submit"
-          aria-label="send"
+          aria-label={commonCopy.sendAria}
           className="grid h-9 w-9 place-items-center rounded-full border border-line bg-copy/8 text-copy transition hover:bg-copy/14"
         >
           <ArrowRight size={16} />
@@ -524,7 +546,7 @@ function NameStep({
   const [custom, setCustom] = useState("");
   return (
     <motion.div {...fade} className="flex flex-col gap-3">
-      <HostLine>Who is this?</HostLine>
+      <HostLine>{createPrompts.nameHost}</HostLine>
       <div className="flex flex-wrap gap-2">
         {suggestions.map((n) => (
           <button
@@ -549,12 +571,12 @@ function NameStep({
           type="text"
           value={custom}
           onChange={(e) => setCustom(e.target.value)}
-          placeholder="or name her yourself"
+          placeholder={createPrompts.customNamePlaceholder}
           className="flex-1 rounded-pill border border-line bg-copy/5 px-4 py-2 text-[13px] text-copy placeholder:text-copy-faint focus:border-copy/35 focus:outline-none"
         />
         <button
           type="submit"
-          aria-label="send"
+          aria-label={commonCopy.sendAria}
           disabled={!custom.trim()}
           className="grid h-9 w-9 place-items-center rounded-full border border-line bg-copy/8 text-copy transition hover:bg-copy/14 disabled:opacity-40"
         >
@@ -583,19 +605,7 @@ function RevealCard({
   onMeet: () => void;
 }) {
   const composedPremise = syntheticPremise ?? composePremise(answers, name);
-  const feelingClause = composeFeelingClause(answers);
-  const shapedItems = useMemo(() => {
-    const items: string[] = [];
-    if (answers.feelings) items.push(feelingClause + ".");
-    if (answers.role) items.push(`a ${answers.role} who'll mostly listen.`);
-    if (answers.voice) items.push(`a ${answers.voice} voice.`);
-    if (answers.looks)
-      items.push(answers.looks.map((l) => l.replace(/-/g, " ")).join(" + ") + ".");
-    if (answers.pace) items.push(`pace: ${answers.pace}.`);
-    if (answers.boundaries) items.push(`boundary: ${answers.boundaries}.`);
-    if (answers.context) items.push(`note: ${truncate(answers.context, 60)}`);
-    return items;
-  }, [answers, feelingClause]);
+  const shapedItems = useMemo(() => composeShapedItems(answers), [answers]);
 
   return (
     <motion.div {...fade} className="flex flex-col gap-4">
@@ -608,7 +618,7 @@ function RevealCard({
 
       <div className="rounded-card border border-line/60 bg-copy/[0.05] p-3.5">
         <p className="text-[12px] uppercase tracking-[0.16em] text-copy-faint">
-          What shaped them
+          {createRevealLabels.whatShapedThem}
         </p>
         <ul className="mt-2 space-y-1 text-[13px] text-copy/85">
           {shapedItems.map((s, i) => (
@@ -619,7 +629,7 @@ function RevealCard({
 
       <div className="rounded-card border border-line/60 bg-copy/[0.04] p-3.5">
         <p className="text-[12px] uppercase tracking-[0.16em] text-copy-faint">
-          First message
+          {createRevealLabels.firstMessage}
         </p>
         <p className="mt-2 text-[15px] italic leading-[1.5] text-copy">
           “{companion.openers.create}”
@@ -628,7 +638,7 @@ function RevealCard({
 
       {synthetic ? null : (
         <p className="text-[11.5px] text-copy-faint">
-          {`Closest cast match — she'll arrive as herself when the rest of her vignettes ship.`}
+          {createRevealLabels.fallbackNote}
         </p>
       )}
 
@@ -637,7 +647,7 @@ function RevealCard({
         onClick={onMeet}
         className="inline-flex items-center gap-1.5 self-start rounded-pill bg-coral px-4 py-2 text-[14px] font-semibold text-ink shadow-soft transition hover:bg-rose"
       >
-        <MessageCircle size={14} /> meet {name}
+        <MessageCircle size={14} /> {createRevealLabels.meet} {name}
       </button>
     </motion.div>
   );

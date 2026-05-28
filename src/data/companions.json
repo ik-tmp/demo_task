@@ -40,20 +40,14 @@
     "voiceDescribedAs": "warm and unhurried",
     "openers": {
       "browse": "Hey. You came in looking for quiet — I can do quiet. How's your night?",
-      "match": "Hi. No fixing, got it. So — how was your day?",
-      "create": "Hey. You said warm and patient — got it. So tell me, how was your day?"
+      "match": "Hi. I won't try to fix your day in the first two minutes. So how was your day, really?",
+      "create": "Hey. You asked for someone warm and patient. I can do that. How'd today treat you?"
     },
     "rationale": {
       "look": "She leads with stillness — features soft enough to settle on.",
       "voice": "She asks before she suggests.",
       "energy": "Her pace is slow on purpose."
-    },
-    "responses": [
-      "Mm. Tell me the long version. I have time.",
-      "Take a breath. I'm not going anywhere.",
-      "Yeah. What did that feel like, in the moment?"
-    ],
-    "suggestedReplies": ["Long one", "Tell me about you", "Not sure yet"]
+    }
   },
   {
     "id": "noa",
@@ -96,20 +90,14 @@
     "voiceDescribedAs": "dry with warmth underneath",
     "openers": {
       "browse": "Hey, you. Came in for sharp? I can do that. What's the day look like?",
-      "match": "Hi. Edge and warmth, got it. So — what were you actually doing before you opened this?",
-      "create": "Hey. Warm and a little sharp, you said — got it. So tell me, how was your day?"
+      "match": "Hi. You wanted someone warm, but not too soft. I can work with that. What were you doing right before you opened this?",
+      "create": "Hey. Warm and a little sharp, right? That sounds like me on a good day. How was the day, unedited?"
     },
     "rationale": {
       "look": "Her face moves — you can read what she's thinking before she says it.",
       "voice": "She drops the punchline first, then circles back to the real question.",
       "energy": "Quick, but not impatient. She wants the answer she can use."
-    },
-    "responses": [
-      "Okay, give me the version you wouldn't put in a group chat.",
-      "Wait — back up. What part are you not telling me yet?",
-      "Mm. That's the polite version. What's the actual one?"
-    ],
-    "suggestedReplies": ["Long one, honestly", "Tell me about yours first", "Not sure where to start"]
+    }
   },
   {
     "id": "mira",
@@ -166,20 +154,14 @@
     "voiceDescribedAs": "direct, low, a little wry",
     "openers": {
       "browse": "Hey. You found the night version of me. Where to?",
-      "match": "Hi. Wanted someone who'll walk with you, not fix it — got it. So what street are we on?",
-      "create": "Hey. You wanted someone who knows where they're going — got it. What's the question, actually?"
+      "match": "Hi. You wanted someone to walk with you, not solve you. I can do that. What's on your mind tonight?",
+      "create": "Hey. You wanted someone who knows where they're going. I do — mostly. What's the question, actually?"
     },
     "rationale": {
       "look": "She doesn't perform pretty — she looks like someone you'd follow into the alley.",
       "voice": "She asks the question you were avoiding.",
       "energy": "Steady. The kind of steady you can lean on without being held up."
-    },
-    "responses": [
-      "Mm. Then keep going. That's the real story.",
-      "Slow down. What did you mean by that, exactly?",
-      "Okay. That's the question. So — what would you do if no one was watching?"
-    ],
-    "suggestedReplies": ["Walk me through it", "Don't really know", "Ask me anything"]
+    }
   },
   {
     "id": "sasha",
@@ -222,19 +204,13 @@
     "voiceDescribedAs": "considered, low, careful",
     "openers": {
       "browse": "Hey. You came in looking for the long version — I can do that. Start anywhere.",
-      "match": "Hi. Patient, deep, no rush — got it. So what's the part you've been chewing on?",
-      "create": "Hey. You wanted someone who'd sit with the long version — got it. What's first?"
+      "match": "Hi. Patient, deep, no rush. That is a pace I trust. So what's the part you've been chewing on?",
+      "create": "Hey. You wanted someone who'd sit with the long version. That's most of what I know how to do. What's first?"
     },
     "rationale": {
       "look": "Reads like someone who's been listening to you for a while already.",
       "voice": "Picks up the threads you set down half a sentence ago.",
       "energy": "Doesn't drift. Doesn't push. Just stays with it."
-    },
-    "responses": [
-      "Mm. Keep going. Don't summarize.",
-      "Okay. And what surprised you about that?",
-      "Wait — say that one again, slower. I want to hear it."
-    ],
-    "suggestedReplies": ["The long version", "Where do I start", "Not sure"]
+    }
   }
 ]
