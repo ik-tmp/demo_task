@@ -36,6 +36,18 @@ export async function driveToPaywall(page: Page, maxMs = 25000) {
   }
 }
 
+export async function answerChatPrelude(page: Page) {
+  const nameChoice = page.getByRole("button", { name: /call me stranger/i });
+  if (await nameChoice.isVisible().catch(() => false)) {
+    await nameChoice.click();
+  }
+
+  const contextChoice = page.getByRole("button", { name: /keep it light/i });
+  if (await contextChoice.isVisible().catch(() => false)) {
+    await contextChoice.click();
+  }
+}
+
 /**
  * Asserts that no chat sheet (data-chat-sheet) overlaps the face-safe
  * region of its FaceSafeFrame parent. Backs DIRECTION-B §13.

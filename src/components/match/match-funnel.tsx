@@ -6,11 +6,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Compass, MessageCircle, Users } from "lucide-react";
 import { matchDialogue } from "@/data/match-dialogue";
 import { cn } from "@/lib/utils";
+import { useFunnelStore } from "@/store/funnel-store";
+import type { MatchPersonalization } from "@/types/session";
 import type { Companion } from "@/types/companion";
 import {
   type AvoidId,
   type FamiliarityId,
   type FeelingId,
+  type MatchAxis,
   type MatchAnswers,
   type RejectionAxis,
   type RoleId,
@@ -65,6 +68,7 @@ type MatchFunnelProps = {
 
 export function MatchFunnel({ companions }: MatchFunnelProps) {
   const router = useRouter();
+  const setMatchPersonalization = useFunnelStore((state) => state.setMatchPersonalization);
   const [step, setStep] = useState<Step>("intro");
   const [answers, setAnswers] = useState<MatchAnswers>({});
   const [pills, setPills] = useState<Pill[]>([]);
@@ -141,7 +145,9 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
   const handleFeeling = (ids: string[]) => {
     const id = ids[0] as FeelingId;
     const label = matchChoices.feeling.find((c) => c.id === id)!.label;
-    setAnswers((a) => ({ ...a, feeling: id }));
+    const next = { ...answers, feeling: id };
+    setAnswers(next);
+    setMatchPersonalization(toMatchPersonalization(next));
     setPills((p) => [...p, { id: `feeling-${id}`, label, axis: "feeling" }]);
     setReaction(reactionFor("feeling", id));
     setStep("role");
@@ -149,7 +155,9 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
   const handleRole = (ids: string[]) => {
     const id = ids[0] as RoleId;
     const label = matchChoices.role.find((c) => c.id === id)!.label;
-    setAnswers((a) => ({ ...a, role: id }));
+    const next = { ...answers, role: id };
+    setAnswers(next);
+    setMatchPersonalization(toMatchPersonalization(next));
     setPills((p) => [...p, { id: `role-${id}`, label, axis: "role" }]);
     setReaction(reactionFor("role", id));
     setStep("texture");
@@ -157,14 +165,18 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
   const handleTexture = (ids: string[]) => {
     const id = ids[0] as TextureId;
     const label = matchChoices.texture.find((c) => c.id === id)!.label;
-    setAnswers((a) => ({ ...a, texture: id }));
+    const next = { ...answers, texture: id };
+    setAnswers(next);
+    setMatchPersonalization(toMatchPersonalization(next));
     setPills((p) => [...p, { id: `texture-${id}`, label, axis: "texture" }]);
     setReaction(reactionFor("texture", id));
     setStep("avoid");
   };
   const handleAvoid = (ids: string[]) => {
     const cast = ids as AvoidId[];
-    setAnswers((a) => ({ ...a, avoid: cast }));
+    const next: MatchAnswers = { ...answers, avoid: cast };
+    setAnswers(next);
+    setMatchPersonalization(toMatchPersonalization(next));
     setPills((p) => [
       ...p,
       ...cast.map((id) => ({
@@ -175,7 +187,6 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
     ]);
     setReaction(reactionFor("avoid", cast[0]));
     // Q4 only fires when prior answers can't distinguish 2+ candidates.
-    const next: MatchAnswers = { ...answers, avoid: cast };
     if (isAmbiguous(companions, next)) {
       setStep("familiarity");
     } else {
@@ -185,14 +196,23 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
   const handleFamiliarity = (ids: string[]) => {
     const id = ids[0] as FamiliarityId;
     const label = matchChoices.familiarity.find((c) => c.id === id)!.label;
-    setAnswers((a) => ({ ...a, familiarity: id }));
+    const next = { ...answers, familiarity: id };
+    setAnswers(next);
+    setMatchPersonalization(toMatchPersonalization(next));
     setPills((p) => [...p, { id: `fam-${id}`, label, axis: "familiarity" }]);
     setReaction(reactionFor("familiarity", id));
     setStep("loading");
   };
-  const handleFreeText = (axis: keyof MatchAnswers) => (text: string) => {
-    // Demo: free-text fills the axis with a generic "freeform" marker
-    // and skips ahead one step.
+  const handleFreeText = (axis: MatchAxis) => (text: string) => {
+    const next: MatchAnswers = {
+      ...answers,
+      freeText: {
+        ...answers.freeText,
+        [axis]: text,
+      },
+    };
+    setAnswers(next);
+    setMatchPersonalization(toMatchPersonalization(next));
     setPills((p) => [
       ...p,
       { id: `${axis}-text`, label: `"${truncate(text, 22)}"`, axis: String(axis) },
@@ -208,13 +228,18 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
     const removed = pills.find((p) => p.id === id);
     setPills((p) => p.filter((x) => x.id !== id));
     if (!removed) return;
-    if (removed.axis === "feeling") setAnswers((a) => ({ ...a, feeling: undefined }));
-    if (removed.axis === "role") setAnswers((a) => ({ ...a, role: undefined }));
-    if (removed.axis === "texture") setAnswers((a) => ({ ...a, texture: undefined }));
+    const next: MatchAnswers = { ...answers, freeText: { ...answers.freeText } };
+    if (removed.axis === "feeling") next.feeling = undefined;
+    if (removed.axis === "role") next.role = undefined;
+    if (removed.axis === "texture") next.texture = undefined;
     if (removed.axis === "avoid")
-      setAnswers((a) => ({ ...a, avoid: a.avoid?.filter((x) => `avoid-${x}` !== id) }));
-    if (removed.axis === "familiarity")
-      setAnswers((a) => ({ ...a, familiarity: undefined }));
+      next.avoid = next.avoid?.filter((x) => `avoid-${x}` !== id);
+    if (removed.axis === "familiarity") next.familiarity = undefined;
+    if (id.endsWith("-text")) {
+      delete next.freeText?.[removed.axis as keyof NonNullable<MatchAnswers["freeText"]>];
+    }
+    setAnswers(next);
+    setMatchPersonalization(toMatchPersonalization(next));
   };
 
   const handleRejection = (ids: string[]) => {
@@ -460,6 +485,22 @@ function stepToDotIndex(step: Step): number {
 
 function truncate(s: string, n: number) {
   return s.length <= n ? s : `${s.slice(0, n - 1)}…`;
+}
+
+function toMatchPersonalization(answers: MatchAnswers): MatchPersonalization {
+  const label = (axis: keyof typeof matchChoices, id?: string) =>
+    id ? matchChoices[axis].find((c) => c.id === id)?.label : undefined;
+
+  return {
+    feeling: label("feeling", answers.feeling),
+    role: label("role", answers.role),
+    texture: label("texture", answers.texture),
+    avoid: answers.avoid
+      ?.map((id) => label("avoid", id))
+      .filter((value): value is string => Boolean(value)),
+    familiarity: label("familiarity", answers.familiarity),
+    freeText: answers.freeText,
+  };
 }
 
 // ---- Reveal actions -----------------------------------------------------

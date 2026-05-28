@@ -24,6 +24,8 @@ export type DialogueBeat = {
   portrait?: PortraitState;
   /** When the user reaches this beat, surface the paywall after the line types. */
   paywall?: boolean;
+  /** In-voice lines streamed after the user clears the mock paywall. */
+  unlockLines?: string[];
 };
 
 export type Dialogue = {

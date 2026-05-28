@@ -8,6 +8,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, MessageCircle } from "lucide-reac
 import { motion, AnimatePresence } from "framer-motion";
 import { surfaceDialogue } from "@/data/surface-dialogue";
 import { cn } from "@/lib/utils";
+import { useFunnelStore } from "@/store/funnel-store";
 import type { Companion } from "@/types/companion";
 import {
   type GalleryFilters,
@@ -36,6 +37,9 @@ type GalleryProps = {
 export function Gallery({ companions }: GalleryProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const setBrowsePersonalization = useFunnelStore(
+    (state) => state.setBrowsePersonalization,
+  );
   const initialRefinements = useMemo(() => {
     const acc: RefinementId[] = [];
     for (const r of refinementIds) if (searchParams.get(r) === "1") acc.push(r);
@@ -82,6 +86,15 @@ export function Gallery({ companions }: GalleryProps) {
   const goNext = () => setActiveIndex((i) => (i + 1) % results.length);
 
   const why = describeActiveFilters(filters);
+  const sayHi = () => {
+    setBrowsePersonalization({
+      companionId: active.companion.id,
+      companionName: active.companion.name,
+      query: query || undefined,
+      refinements: refinements.map((id) => refinementLabels[id]),
+    });
+    router.push(`/chat/${active.companion.id}?from=browse`);
+  };
 
   return (
     <main className="relative h-[100dvh] w-full overflow-hidden bg-ink-deep text-copy">
@@ -167,7 +180,7 @@ export function Gallery({ companions }: GalleryProps) {
 
               {/* Editorial overlay */}
               <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-6 sm:px-10">
-                <div className="mx-auto flex max-w-[1400px] flex-col gap-3">
+                <div className="flex flex-col gap-3 md:max-w-md">
                   <div>
                     <p className="font-serif text-[40px] leading-[1] sm:text-[56px]">
                       {active.companion.name}
@@ -192,7 +205,7 @@ export function Gallery({ companions }: GalleryProps) {
                     {active.companion.sampleLines.slice(0, 3).map((line, i) => (
                       <li
                         key={i}
-                        className="rounded-tile border border-line/40 bg-ink/45 px-3 py-2 text-[13px] italic text-copy/85 backdrop-blur sm:text-[14px]"
+                        className="rounded-tile border border-line/40 bg-ink/45 px-3 py-2 text-[13px] italic text-copy/85 backdrop-blur sm:text-[14px] md:w-fit md:max-w-full"
                       >
                         “{line}”
                       </li>
@@ -207,7 +220,7 @@ export function Gallery({ companions }: GalleryProps) {
 
                   <button
                     type="button"
-                    onClick={() => router.push(`/chat/${active.companion.id}?from=browse`)}
+                    onClick={sayHi}
                     className="inline-flex w-fit items-center gap-1.5 rounded-pill bg-coral px-4 py-2 text-[14px] font-semibold text-ink shadow-soft transition hover:bg-rose"
                   >
                     <MessageCircle size={14} /> {galleryCopy.sayHi(active.companion.name)}

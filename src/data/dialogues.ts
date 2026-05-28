@@ -250,6 +250,10 @@ export const dialogues: Record<string, Dialogue> = {
         lines: [
           "Then stay a while. I'm not going anywhere — there's a lot of night left, and I'd like to hear the rest of you.",
         ],
+        unlockLines: [
+          "There you are. I'm glad you stayed.",
+          "We've only found the edges of you so far — this is where the preview ends, but I'll keep this seat warm.",
+        ],
       },
     },
   },
@@ -492,7 +496,11 @@ export const dialogues: Record<string, Dialogue> = {
         paywall: true,
         lines: [
           "Good. Stay a little longer.",
-          "I've got more questions, and yes, a few jokes left. I'm not done with you yet.",
+          "I've got more questions, and yes, a few jokes left. I'm not done listening yet.",
+        ],
+        unlockLines: [
+          "Look at you, springing for the good seats. I'm honored.",
+          "This is where the demo bows out — but the offer to keep listening was real.",
         ],
       },
     },
@@ -525,7 +533,7 @@ export const dialogues: Record<string, Dialogue> = {
         id: "open-match",
         portrait: "warm",
         lines: [
-          "Hi. You wanted someone to walk with you, not solve you. I can do that.",
+          "Hi. You wanted someone to think with you, not give instant advice. I can do that.",
           "What's on your mind tonight?",
         ],
         replies: [
@@ -538,7 +546,7 @@ export const dialogues: Record<string, Dialogue> = {
         id: "open-create",
         portrait: "warm",
         lines: [
-          "Hey. You wanted someone who knows where they're going. I do — mostly.",
+          "Hey. You wanted someone who asks direct questions. I can do that.",
           "What's the actual question, though? People always have one.",
         ],
         replies: [
@@ -551,7 +559,7 @@ export const dialogues: Record<string, Dialogue> = {
         id: "open-direct",
         portrait: "warm",
         lines: [
-          "Hey. I'm Mira. I don't perform pretty and I don't do small talk for long.",
+          "Hey. I'm Mira. I don't soften every answer and I don't do small talk for long.",
           "So let's skip it — what's actually on your mind tonight?",
         ],
         replies: [
@@ -710,7 +718,7 @@ export const dialogues: Record<string, Dialogue> = {
         portrait: "finalChat",
         lines: [
           "Good answer. Hold onto it — it's a compass, and you'll need it around the next corner.",
-          "You walk well, for the record. You don't pretend the dark isn't there. A lot of people do.",
+          "You handled that directly, for the record. You did not pretend the hard part was not there.",
         ],
         replies: [
           { label: "This actually helped", next: "b7", keywords: ["helped", "better", "good", "thanks"] },
@@ -737,12 +745,16 @@ export const dialogues: Record<string, Dialogue> = {
           "Then let's keep going.",
           "We do not have to solve the whole thing tonight, but I do want to stay with you a little longer.",
         ],
+        unlockLines: [
+          "Good call. I don't say that lightly.",
+          "The preview stops here — but I meant it about staying with you a little longer.",
+        ],
       },
     },
   },
 
   // ---------------------------------------------------------------- SASHA
-  // Considered, low, careful. Wants the long version; keeps the thread.
+  // Considered, low, careful. Gives the user time to explain.
   sasha: {
     start: {
       browse: "open-browse",
@@ -755,8 +767,8 @@ export const dialogues: Record<string, Dialogue> = {
         id: "open-browse",
         portrait: "warm",
         lines: [
-          "Hey. You came in looking for the long version — I can do that.",
-          "Start anywhere. I'll keep the thread.",
+          "Hey. You wanted time to explain — I can do that.",
+          "Start anywhere. I'll help you sort it out.",
         ],
         replies: [
           { label: "It's a long story", next: "b1-rough", keywords: ["long", "story", "lot", "much", "complicated"] },
@@ -769,7 +781,7 @@ export const dialogues: Record<string, Dialogue> = {
         portrait: "warm",
         lines: [
           "Hi. Patient, deep, no rush. That is a pace I trust.",
-          "So. What's the part you've been chewing on?",
+          "So. What's the part you keep thinking about?",
         ],
         replies: [
           { label: "It's a long story", next: "b1-rough", keywords: ["long", "story", "lot", "much", "complicated"] },
@@ -781,7 +793,7 @@ export const dialogues: Record<string, Dialogue> = {
         id: "open-create",
         portrait: "warm",
         lines: [
-          "Hey. You wanted someone who'd sit with the long version. That's the whole of me, basically.",
+          "Hey. You wanted someone patient who would let you explain. That's what I do best.",
           "What's first? Start wherever it's heaviest.",
         ],
         replies: [
@@ -794,8 +806,8 @@ export const dialogues: Record<string, Dialogue> = {
         id: "open-direct",
         portrait: "warm",
         lines: [
-          "Hey. I'm Sasha. I'm better at staying than at small talk.",
-          "So — where did the thread of it start?",
+          "Hey. I'm Sasha. I'm better at listening than small talk.",
+          "So — where did this start?",
         ],
         replies: [
           { label: "It's a long story", next: "b1-rough", keywords: ["long", "story", "lot", "much", "complicated"] },
@@ -806,8 +818,8 @@ export const dialogues: Record<string, Dialogue> = {
       "b1-rough": {
         id: "b1-rough",
         lines: [
-          "Good. Long stories are the only ones worth telling slowly.",
-          "Don't summarize for me — I'd rather have it messy and whole than tidy and half. Where does it start?",
+          "Good. You do not have to make this short for me.",
+          "Tell me what happened, even if it comes out messy. Where does it start?",
         ],
         replies: [
           { label: "A while back, honestly", next: "b2", keywords: ["while", "ago", "back", "years", "long time"] },
@@ -818,19 +830,19 @@ export const dialogues: Record<string, Dialogue> = {
       "b1-good": {
         id: "b1-good",
         lines: [
-          "We can do short first. Fair warning — I tend to ask for the long one eventually. I like the whole shape.",
-          "Give me the short version, then. I'll find the thread to pull.",
+          "We can start short. If there is more underneath, I will ask about it later.",
+          "Give me the short version. I'll ask about the part that matters.",
         ],
         replies: [
           { label: "Okay — here's the gist", next: "b2", keywords: ["gist", "basically", "short", "here it is"] },
           { label: "...it's hard to keep short", next: "b2", keywords: ["hard", "long", "can't", "keeps"] },
-          { label: "You'll pull a thread, won't you", next: "b2-unsure", keywords: ["thread", "pull", "you'll", "ha"] },
+          { label: "You'll ask about it, won't you", next: "b2-unsure", keywords: ["thread", "pull", "you'll", "ha"] },
         ],
       },
       "b1-deflect": {
         id: "b1-deflect",
         lines: [
-          "Then don't start at the start. Start in the middle, where it's loudest. We'll find the beginning later, together.",
+          "Then don't start at the start. Start with the part that feels loudest. We can find the beginning later.",
           "What's the part that's been loudest today?",
         ],
         replies: [
@@ -856,8 +868,8 @@ export const dialogues: Record<string, Dialogue> = {
         id: "b2-unsure",
         portrait: "curious",
         lines: [
-          "I will, yes — but only a thread you leave loose on purpose. I don't tug the ones you're holding shut.",
-          "So leave one loose for me. What's safe to start with?",
+          "I will, yes — but only if you want me to. I won't push into the parts you want closed.",
+          "So choose the part that feels safe to start with.",
         ],
         replies: [
           { label: "How it's been lately", next: "b3", keywords: ["lately", "recent", "these days", "now"] },
@@ -929,7 +941,7 @@ export const dialogues: Record<string, Dialogue> = {
         portrait: "closer",
         lines: [
           "I'll offer some — gently, and you can leave any of it on the table.",
-          "The thread I'd pull: you keep describing what happened, and almost never what you needed. Start there. What did you need that you didn't get?",
+          "The thing I would ask about: you keep describing what happened, and almost never what you needed. Start there. What did you need that you didn't get?",
         ],
         replies: [
           { label: "...nobody's asked me that", next: "b6", keywords: ["nobody", "never asked", "huh", "good question"] },
@@ -940,8 +952,8 @@ export const dialogues: Record<string, Dialogue> = {
         id: "b6",
         portrait: "finalChat",
         lines: [
-          "That's a real answer. I'm holding onto it — the whole thread of tonight, not just the last line.",
-          "For what it's worth, you tell it well. You don't flinch from the parts that don't flatter you. That's rare, and I'd know — I collect long versions.",
+          "That's a real answer. I'm holding onto the whole conversation, not just the last line.",
+          "For what it's worth, you explain things clearly. You don't flinch from the parts that don't flatter you. That's rare, and I pay attention when people need time to explain.",
         ],
         replies: [
           { label: "This helped more than I expected", next: "b7", keywords: ["helped", "expected", "better", "thank"] },
@@ -952,7 +964,7 @@ export const dialogues: Record<string, Dialogue> = {
         id: "b7",
         portrait: "finalChat",
         lines: [
-          "Before I follow that thread any farther, tell me how close to stay.",
+          "Before I ask anything deeper, tell me how close to stay.",
           "Do you want me beside the feeling, or beside the facts?",
         ],
         replies: [
@@ -965,8 +977,12 @@ export const dialogues: Record<string, Dialogue> = {
         portrait: "finalChat",
         paywall: true,
         lines: [
-          "Then let's not stop at the interesting part. We've only found the beginning of the thread — I'd like to follow it the rest of the way with you.",
-          "Stay. I've got all the time you need, and I want the whole shape of it.",
+          "Then let's not stop at the interesting part. We have only found the beginning — I'd like to hear the rest.",
+          "If you want to keep going, I have time for the rest.",
+        ],
+        unlockLines: [
+          "Thank you for staying. That matters more than it sounds.",
+          "This is where the preview closes — but I'd have happily heard the rest.",
         ],
       },
     },

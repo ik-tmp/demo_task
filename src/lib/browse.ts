@@ -122,8 +122,8 @@ const previewAnswersByEnergy: Record<CompanionEnergy, string[]> = {
     "Ask. I've probably walked that street before.",
   ],
   confidant: [
-    "I'd want the long version. I keep the thread, so don't worry about rambling.",
-    "Tell me where it starts. I'll stay with it.",
+    "I'd give you time to explain, so don't worry about rambling.",
+    "Tell me where it starts. I'll help you sort it out.",
     "I'm slow on purpose. The good stuff doesn't rush.",
   ],
 };

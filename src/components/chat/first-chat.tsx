@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
 import { surfaceDialogue } from "@/data/surface-dialogue";
 import { cn } from "@/lib/utils";
+import { useFunnelStore } from "@/store/funnel-store";
 import type { Companion, PortraitState } from "@/types/companion";
 import type { DialogueBeat, Source } from "@/types/dialogue";
+import type { NameMode } from "@/types/session";
 import {
   MAX_USER_TURNS,
   getBeat,
@@ -16,8 +18,10 @@ import {
   routeFreeText,
   startBeat,
 } from "@/lib/dialogue";
-import { motionMs } from "@/lib/motion";
+import { cleanName, personalizeStartBeat } from "@/lib/chat-personalization";
+import { motionMs, prefersReducedMotion } from "@/lib/motion";
 import { FunnelShell } from "@/components/funnel/funnel-shell";
+import { HostLine } from "@/components/funnel/host-line";
 import { TypingText } from "./typing-text";
 import { Paywall, type PaywallStatus } from "./paywall";
 
@@ -32,10 +36,20 @@ type FirstChatProps = {
   companion: Companion;
 };
 const chatCopy = surfaceDialogue.chat;
+const preludeCopy = chatCopy.prelude;
+type PreludeStep = "checking" | "name" | "context" | "chat";
 
 export function FirstChat({ companion }: FirstChatProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const hasHydrated = useFunnelStore((state) => state.hasHydrated);
+  const displayName = useFunnelStore((state) => state.displayName);
+  const nameMode = useFunnelStore((state) => state.nameMode);
+  const helloContext = useFunnelStore((state) => state.helloContext);
+  const matchPersonalization = useFunnelStore((state) => state.match);
+  const createPersonalization = useFunnelStore((state) => state.create);
+  const browsePersonalization = useFunnelStore((state) => state.browse);
+  const setDisplayName = useFunnelStore((state) => state.setDisplayName);
+  const setHelloContext = useFunnelStore((state) => state.setHelloContext);
   const sourceParam = searchParams.get("from");
   const source: Source = useMemo(() => {
     if (sourceParam === "browse" || sourceParam === "match" || sourceParam === "create")
@@ -49,23 +63,66 @@ export function FirstChat({ companion }: FirstChatProps) {
     [dialogue, source],
   );
 
-  const [beat, setBeat] = useState<DialogueBeat | null>(start);
-  const [messages, setMessages] = useState<Message[]>(() =>
-    start
-      ? [{ id: "c-1", author: "companion", text: start.lines[0], typing: true }]
-      : [],
+  const personalizedStart = useMemo(
+    () =>
+      start
+        ? personalizeStartBeat(start, {
+            companion,
+            source,
+            displayName,
+            nameMode,
+            helloContext,
+            match: matchPersonalization,
+            create: createPersonalization,
+            browse: browsePersonalization,
+          })
+        : null,
+    [
+      start,
+      companion,
+      source,
+      displayName,
+      nameMode,
+      helloContext,
+      matchPersonalization,
+      createPersonalization,
+      browsePersonalization,
+    ],
   );
+  const preludeStep = resolvePreludeStep(hasHydrated, displayName, helloContext);
+  const [beat, setBeat] = useState<DialogueBeat | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [repliesReady, setRepliesReady] = useState(false);
   const [companionTyping, setCompanionTyping] = useState(false);
   const [portrait, setPortrait] = useState<PortraitState>(start?.portrait ?? "warm");
   const [paywall, setPaywall] = useState<PaywallStatus>("hidden");
   const [userInput, setUserInput] = useState("");
 
-  const lineQueueRef = useRef<string[]>(start ? start.lines.slice(1) : []);
+  const lineQueueRef = useRef<string[]>([]);
+  const unlockedRef = useRef(false);
   const userTurnsRef = useRef(0);
   const idCounter = useRef(1);
+  const startedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const paywallRef = useRef<HTMLDivElement | null>(null);
   const nextId = (prefix: string) => `${prefix}-${(idCounter.current += 1)}`;
+
+  useEffect(() => {
+    if (preludeStep !== "chat" || !personalizedStart || startedRef.current) return;
+    startedRef.current = true;
+    setBeat(personalizedStart);
+    setRepliesReady(false);
+    setPortrait(personalizedStart.portrait ?? "warm");
+    lineQueueRef.current = personalizedStart.lines.slice(1);
+    setMessages([
+      {
+        id: "c-1",
+        author: "companion",
+        text: personalizedStart.lines[0],
+        typing: true,
+      },
+    ]);
+  }, [personalizedStart, preludeStep]);
 
   // Enter a beat: settle portrait, queue its lines, type the first one.
   const enterBeat = (b: DialogueBeat) => {
@@ -86,6 +143,17 @@ export function FirstChat({ companion }: FirstChatProps) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, repliesReady, paywall]);
 
+  // When the wall appears, bring it fully into view — it should never be
+  // something the user has to scroll down to discover.
+  useEffect(() => {
+    if (paywall === "open") {
+      paywallRef.current?.scrollIntoView({
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+        block: "end",
+      });
+    }
+  }, [paywall]);
+
   // A companion line finished typing.
   const handleLineDone = (id: string) => {
     setMessages((cur) => cur.map((x) => (x.id === id ? { ...x, typing: false } : x)));
@@ -101,7 +169,10 @@ export function FirstChat({ companion }: FirstChatProps) {
       return;
     }
     // Beat fully delivered.
-    if (beat?.paywall || userTurnsRef.current >= MAX_USER_TURNS) {
+    if (
+      (beat?.paywall && !unlockedRef.current) ||
+      userTurnsRef.current >= MAX_USER_TURNS
+    ) {
       window.setTimeout(() => setPaywall("open"), motionMs(400));
     } else {
       setRepliesReady(true);
@@ -129,26 +200,90 @@ export function FirstChat({ companion }: FirstChatProps) {
     const trimmed = text.trim();
     if (!trimmed || !beat || !repliesReady) return;
     const reply = routeFreeText(beat, trimmed);
-    if (!reply) return;
-    advance(reply.next, trimmed);
+    if (reply) {
+      advance(reply.next, trimmed);
+      return;
+    }
+    // Post-unlock: scripted branches are spent, but premium keeps replying.
+    if (unlockedRef.current) {
+      setRepliesReady(false);
+      setUserInput("");
+      setMessages((m) => [...m, { id: nextId("u"), author: "user", text: trimmed }]);
+      setCompanionTyping(true);
+      window.setTimeout(() => {
+        setCompanionTyping(false);
+        setMessages((m) => [
+          ...m,
+          { id: nextId("c"), author: "companion", text: chatCopy.unlockedAck, typing: true },
+        ]);
+      }, motionMs(380));
+    }
   };
 
-  // Paywall handlers (mock).
+  // Paywall handlers (mock). "Unlock" briefly confirms, then streams the
+  // beat's bonus lines and re-enables the input — premium, faked.
   const onContinue = () => {
+    unlockedRef.current = true;
     setPaywall("success");
-    window.setTimeout(() => setPaywall("hidden"), 1600);
+    const bonus = beat?.unlockLines ?? [];
+    window.setTimeout(() => {
+      setPaywall("hidden");
+      if (bonus.length > 0) {
+        lineQueueRef.current = bonus.slice(1);
+        setMessages((m) => [
+          ...m,
+          { id: nextId("c"), author: "companion", text: bonus[0], typing: true },
+        ]);
+      } else {
+        setRepliesReady(true);
+      }
+    }, motionMs(1500));
   };
   const onDismiss = () => setPaywall("dismissed");
-  const onTryAnother = () => router.push("/");
-  const onRestoreError = () => setPaywall("error");
 
+  // Any non-hidden paywall state hard-blocks the conversation: input
+  // disabled and suggested replies hidden. Only "Unlock" (mock) lifts it.
+  const paywallBlocking = paywall === "open" || paywall === "dismissed";
   const showReplies =
     repliesReady &&
     !companionTyping &&
-    paywall !== "open" &&
-    paywall !== "success" &&
+    paywall === "hidden" &&
     Boolean(beat?.replies?.length);
-  const inputLocked = paywall === "open" || !repliesReady || companionTyping;
+  const inputLocked = paywallBlocking || !repliesReady || companionTyping;
+
+  if (preludeStep !== "chat") {
+    return (
+      <FunnelShell
+        portrait={{
+          src: portraitAsset(companion, portrait),
+          alt: companion.name,
+          faceSafe: companion.faceSafe,
+        }}
+      >
+        {preludeStep === "checking" ? (
+          <HostLine variant="secondary">{preludeCopy.loading}</HostLine>
+        ) : null}
+
+        {preludeStep === "name" ? (
+          <PreludePrompt
+            host={preludeCopy.nameHost}
+            placeholder={preludeCopy.namePlaceholder}
+            choices={preludeCopy.nameChoices}
+            onSubmit={(value, mode) => setDisplayName(cleanName(value), mode)}
+          />
+        ) : null}
+
+        {preludeStep === "context" ? (
+          <PreludePrompt
+            host={preludeCopy.contextHost}
+            placeholder={preludeCopy.contextPlaceholder}
+            choices={preludeCopy.contextChoices}
+            onSubmit={(value) => setHelloContext(value)}
+          />
+        ) : null}
+      </FunnelShell>
+    );
+  }
 
   return (
     <FunnelShell
@@ -170,7 +305,10 @@ export function FirstChat({ companion }: FirstChatProps) {
 
         <div
           ref={scrollRef}
-          className="flex flex-col gap-2.5 overflow-y-auto"
+          className={cn(
+            "flex flex-col gap-2.5 overflow-y-auto transition-[filter,opacity] duration-300",
+            paywallBlocking && "pointer-events-none select-none blur-[3px] opacity-45",
+          )}
           aria-label={chatCopy.conversationAria}
         >
           <AnimatePresence initial={false}>
@@ -223,14 +361,14 @@ export function FirstChat({ companion }: FirstChatProps) {
           </div>
         ) : null}
 
-        <Paywall
-          status={paywall}
-          companionName={companion.name}
-          onContinue={onContinue}
-          onDismiss={onDismiss}
-          onTryAnother={onTryAnother}
-          onRestoreError={onRestoreError}
-        />
+        <div ref={paywallRef}>
+          <Paywall
+            status={paywall}
+            companionName={companion.name}
+            onContinue={onContinue}
+            onDismiss={onDismiss}
+          />
+        </div>
 
         <form
           onSubmit={(e) => {
@@ -239,19 +377,31 @@ export function FirstChat({ companion }: FirstChatProps) {
           }}
           className="mt-1 flex items-center gap-2"
         >
-          <input
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder={
-              paywall === "open"
-                ? chatCopy.inputPreviewFull
-                : chatCopy.inputPlaceholder(companion.name)
-            }
-            disabled={inputLocked}
-            aria-label={chatCopy.inputAria}
-            className="flex-1 rounded-pill border border-line bg-copy/5 px-4 py-2 text-[14px] text-copy placeholder:text-copy-faint focus:border-copy/35 focus:outline-none disabled:opacity-50"
-          />
+          <div className="relative flex-1">
+            {paywallBlocking ? (
+              <Lock
+                size={14}
+                aria-hidden
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-copy-faint"
+              />
+            ) : null}
+            <input
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              placeholder={
+                paywallBlocking
+                  ? chatCopy.inputLocked
+                  : chatCopy.inputPlaceholder(companion.name)
+              }
+              disabled={inputLocked}
+              aria-label={chatCopy.inputAria}
+              className={cn(
+                "w-full rounded-pill border border-line bg-copy/5 py-2 text-[14px] text-copy placeholder:text-copy-faint focus:border-copy/35 focus:outline-none disabled:opacity-50",
+                paywallBlocking ? "pl-9 pr-4" : "px-4",
+              )}
+            />
+          </div>
           <button
             type="submit"
             disabled={!userInput.trim() || inputLocked}
@@ -264,4 +414,88 @@ export function FirstChat({ companion }: FirstChatProps) {
       </div>
     </FunnelShell>
   );
+}
+
+type PreludeChoice = {
+  label: string;
+  value: string;
+  mode?: NameMode;
+};
+
+type PreludePromptProps = {
+  host: string;
+  placeholder: string;
+  choices: PreludeChoice[];
+  onSubmit: (value: string, mode?: NameMode) => void;
+};
+
+function PreludePrompt({
+  host,
+  placeholder,
+  choices,
+  onSubmit,
+}: PreludePromptProps) {
+  const [text, setText] = useState("");
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
+      className="flex flex-col gap-3"
+    >
+      <HostLine>{host}</HostLine>
+      <div className="flex flex-wrap gap-2">
+        {choices.map((choice) => (
+          <button
+            key={choice.label}
+            type="button"
+            onClick={() => onSubmit(choice.value, choice.mode)}
+            className="rounded-pill border border-line bg-copy/8 px-3.5 py-1.5 text-[14px] text-copy transition hover:bg-copy/14"
+          >
+            {choice.label}
+          </button>
+        ))}
+      </div>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          const trimmed = text.trim();
+          if (!trimmed) return;
+          onSubmit(trimmed, "given");
+          setText("");
+        }}
+        className="mt-1 flex items-center gap-2"
+      >
+        <input
+          type="text"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          placeholder={placeholder}
+          aria-label={placeholder}
+          className="flex-1 rounded-pill border border-line bg-copy/5 px-4 py-2 text-[14px] text-copy placeholder:text-copy-faint focus:border-copy/35 focus:outline-none"
+        />
+        <button
+          type="submit"
+          disabled={!text.trim()}
+          aria-label={chatCopy.sendAria}
+          className="grid h-9 w-9 place-items-center rounded-full border border-line bg-copy/8 text-copy transition hover:bg-copy/14 disabled:opacity-40"
+        >
+          <ArrowRight size={16} />
+        </button>
+      </form>
+    </motion.div>
+  );
+}
+
+function resolvePreludeStep(
+  hasHydrated: boolean,
+  displayName: string | null,
+  helloContext: string | null,
+): PreludeStep {
+  if (!hasHydrated) return "checking";
+  if (!displayName) return "name";
+  if (!helloContext) return "context";
+  return "chat";
 }

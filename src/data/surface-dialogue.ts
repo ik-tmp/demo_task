@@ -4,18 +4,18 @@ export const surfaceDialogue = {
   common: {
     back: "back",
     reel: "reel",
-    continue: "continue",
-    defaultSkip: "just meet them",
-    freeTextPlaceholder: "say it your way",
+    continue: "keep going",
+    defaultSkip: "meet her now",
+    freeTextPlaceholder: "type your answer",
     sendAria: "send",
   },
 
   reel: {
-    prompt: "Who do you want to start with?",
+    prompt: "Who do you want to talk to first?",
     actions: {
-      seeEveryone: "see everyone",
-      pickForMe: "pick for me",
-      describeSomeoneElse: "describe someone else",
+      seeEveryone: "show all companions",
+      pickForMe: "choose someone for me",
+      describeSomeoneElse: "describe who you want",
     },
     openAria: (name: string) => `Open ${name}`,
   },
@@ -23,62 +23,85 @@ export const surfaceDialogue = {
   browse: {
     actions: {
       sayHi: (name: string) => `say hi to ${name}`,
-      tellMore: "tell me more",
-      seeEveryone: "see everyone",
+      tellMore: "show first messages",
+      seeEveryone: "show all companions",
       showSofter: "show me softer",
       showSharper: "show me sharper",
     },
-    samplesIntro: "Three things she might open with.",
+    samplesIntro: "Here are a few ways she might start.",
     voicePrompt: (voice: string) =>
-      `Her voice is ${voice}. Ask her something before you decide.`,
+      `Her voice is ${voice}. Ask one question before you choose.`,
     askPlaceholder: (name: string) => `ask ${name} something`,
-    qaLimitPrompt: "She'll tell you the rest herself. Want to say hi?",
+    qaLimitPrompt: "You can keep talking with her in chat. Want to say hi?",
     hostIntro: (c: Companion) => {
       switch (c.energy) {
         case "listener":
-          return `${c.name} reads more than she talks. She asks good questions and waits for the answer.`;
+          return `${c.name} listens first. She asks gentle questions and gives you time to answer.`;
         case "provoker":
-          return `${c.name} is quick. She finds the part of the story you were about to skip, then makes room for it.`;
+          return `${c.name} keeps things light, then asks what is really going on.`;
         case "guide":
-          return `${c.name} knows where she's going. She walks beside you and skips the small talk.`;
+          return `${c.name} asks direct questions and helps you think clearly.`;
         case "confidant":
-          return `${c.name} wants the long version. She keeps track when the story gets messy.`;
+          return `${c.name} gives you time to explain and helps you sort it out.`;
       }
     },
   },
 
   gallery: {
     back: "reel",
-    searchPlaceholder: "Describe who you want to meet.",
+    searchPlaceholder: "Describe who you want to talk to.",
     searchAria: "Search companions",
-    submit: "go",
+    submit: "search",
     previousAria: "previous",
     nextAria: "next",
-    why: (reason: string) => `Why you're seeing this: matched on ${reason}.`,
+    why: (reason: string) => `You asked for ${reason}. This is the closest match.`,
     sayHi: (name: string) => `say hi to ${name}`,
   },
 
   chat: {
     conversationAria: "conversation",
     typing: (name: string) => `${name.toLowerCase()} is typing...`,
-    inputPreviewFull: "preview is full",
+    inputLocked: "Subscribe to keep chatting",
     inputPlaceholder: (name: string) => `say something to ${name}`,
     inputAria: "say something",
     sendAria: "send",
+    unlockedAck: "Mm. Tell me more — I'm listening.",
+    prelude: {
+      nameHost: "Before she says hello, what should she call you?",
+      namePlaceholder: "type your name or alias",
+      nameChoices: [
+        { label: "call me stranger", value: "stranger", mode: "alias" as const },
+        { label: "do we need names to talk?", value: "stranger", mode: "unnamed" as const },
+      ],
+      contextHost: "Tell her one thing before she says hello.",
+      contextPlaceholder: "a mood, a situation, or one sentence",
+      contextChoices: [
+        { label: "long day", value: "It has been a long day." },
+        { label: "keep it light", value: "Keep the first hello light." },
+        { label: "just curious", value: "I am just curious and feeling this out." },
+      ],
+      loading: "getting the chat ready...",
+    },
   },
 
   paywall: {
-    dismissed: "No problem. This chat stays in preview.",
-    success: "You're in. Keep going.",
-    error: "That didn't go through. Nothing changed.",
-    title: (name: string) => `Keep talking with ${name}?`,
-    body: "Your preview is ready to continue.",
+    eyebrow: "Preview ended",
+    title: (name: string) => `Keep talking with ${name}`,
+    body: "Unlimited messages, voice, and memory.",
+    plans: [
+      { id: "monthly", name: "Monthly", perMonth: "$12/mo", billed: "billed monthly", save: null, best: null },
+      { id: "quarter", name: "3 months", perMonth: "$10/mo", billed: "$30 every 3 months", save: "Save 17%", best: null },
+      { id: "yearly", name: "12 months", perMonth: "$8/mo", billed: "$96 a year", save: "Save 33%", best: "Best value" },
+    ] as const,
+    defaultPlan: "yearly" as const,
+    footnote: "Cancel anytime.",
+    closeAria: "Dismiss",
+    dismissedTitle: "Preview paused",
+    dismissed: "Unlock anytime to keep talking.",
+    success: "You're in — premium unlocked.",
     actions: {
-      continue: "continue",
-      notNow: "not now",
-      trySomeoneElse: "try someone else",
-      restoreAccess: "restore access",
-      tryAgain: "try again",
+      continue: "Unlock unlimited",
+      unlock: "Unlock",
     },
   },
 };

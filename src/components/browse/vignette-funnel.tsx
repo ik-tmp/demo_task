@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, MessageCircle, Users } from "lucide-react";
 import { surfaceDialogue } from "@/data/surface-dialogue";
+import { useFunnelStore } from "@/store/funnel-store";
 import type { Companion } from "@/types/companion";
 import { PREVIEW_QA_MAX_TURNS, previewAnswer } from "@/lib/browse";
 import { motionSec } from "@/lib/motion";
@@ -23,12 +24,22 @@ type VignetteFunnelProps = {
 
 export function VignetteFunnel({ companion }: VignetteFunnelProps) {
   const router = useRouter();
+  const setBrowsePersonalization = useFunnelStore(
+    (state) => state.setBrowsePersonalization,
+  );
   const [step, setStep] = useState<Step>("intro");
   const [qa, setQa] = useState<QA[]>([]);
   const [ask, setAsk] = useState("");
   const turnRef = useRef(0);
 
-  const sayHi = () => router.push(`/chat/${companion.id}?from=browse`);
+  const sayHi = () => {
+    setBrowsePersonalization({
+      companionId: companion.id,
+      companionName: companion.name,
+      previewQuestion: qa.at(-1)?.q,
+    });
+    router.push(`/chat/${companion.id}?from=browse`);
+  };
   const tellMore = () => setStep("samples");
   const seeEveryone = () => router.push("/gallery");
   const showSofter = () => router.push("/gallery?softer=1");
@@ -40,6 +51,11 @@ export function VignetteFunnel({ companion }: VignetteFunnelProps) {
     if (!trimmed || atQaLimit) return;
     const answer = previewAnswer(companion, turnRef.current);
     turnRef.current += 1;
+    setBrowsePersonalization({
+      companionId: companion.id,
+      companionName: companion.name,
+      previewQuestion: trimmed,
+    });
     setQa((cur) => [...cur, { id: turnRef.current, q: trimmed, a: answer }]);
     setAsk("");
   };

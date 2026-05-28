@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, MessageCircle } from "lucide-react";
 import { createDialogue } from "@/data/create-dialogue";
 import { surfaceDialogue } from "@/data/surface-dialogue";
 import { cn } from "@/lib/utils";
+import { useFunnelStore } from "@/store/funnel-store";
 import type { Companion } from "@/types/companion";
+import type { CreatePersonalization } from "@/types/session";
 import {
   type CreateAnswers,
   type BoundaryId,
@@ -69,6 +71,10 @@ type CreateFunnelProps = {
 
 export function CreateFunnel({ companions }: CreateFunnelProps) {
   const router = useRouter();
+  const setCreatePersonalization = useFunnelStore(
+    (state) => state.setCreatePersonalization,
+  );
+  const setHelloContext = useFunnelStore((state) => state.setHelloContext);
   const [step, setStep] = useState<Step>("feeling");
   const [answers, setAnswers] = useState<CreateAnswers>({});
   const [pills, setPills] = useState<Pill[]>([]);
@@ -91,6 +97,12 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
 
   const portraitSrc =
     step === "reveal" ? reveal.src : IN_PROGRESS_STAGES[stage];
+
+  useEffect(() => {
+    setCreatePersonalization(
+      toCreatePersonalization(answers, reveal.syntheticName ?? chosenName),
+    );
+  }, [answers, chosenName, reveal.syntheticName, setCreatePersonalization]);
 
   // ---- Submit handlers ---------------------------------------------------
 
@@ -173,6 +185,7 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
   const handleContextSkip = () => setStep("name");
   const handleContextSubmit = (text: string) => {
     setAnswers((a) => ({ ...a, context: text }));
+    setHelloContext(text);
     setPills((p) => [
       ...p,
       { id: "context", label: `“${truncate(text, 20)}”`, axis: "context" },
@@ -227,6 +240,7 @@ export function CreateFunnel({ companions }: CreateFunnelProps) {
     }
     // Also keep the raw text as the context seed.
     next.context = text;
+    setHelloContext(text);
     setAnswers(next);
     setPills(newPills);
     // Jump forward while still preserving the concrete shaping turns.
@@ -465,6 +479,36 @@ function stepToDotIndex(step: Step): number {
 
 function truncate(s: string, n: number) {
   return s.length <= n ? s : `${s.slice(0, n - 1)}…`;
+}
+
+function toCreatePersonalization(
+  answers: CreateAnswers,
+  companionName?: string,
+): CreatePersonalization {
+  const choiceLabel = (
+    axis: keyof typeof createChoices,
+    id?: string,
+  ): string | undefined =>
+    id ? createChoices[axis].find((choice) => choice.id === id)?.label : undefined;
+  const voice = answers.voice
+    ? createDialogue.voiceSamples.find((sample) => sample.id === answers.voice)?.label
+    : undefined;
+
+  return {
+    companionName: companionName || answers.name,
+    feelings: answers.feelings
+      ?.map((id) => choiceLabel("feeling", id))
+      .filter((value): value is string => Boolean(value)),
+    role: choiceLabel("role", answers.role),
+    voice,
+    looks: answers.looks
+      ?.map((id) => choiceLabel("look", id))
+      .filter((value): value is string => Boolean(value)),
+    boundaries:
+      choiceLabel("boundaries", answers.boundaries) ??
+      (answers.boundaries ? String(answers.boundaries).replace(/-/g, " ") : undefined),
+    context: answers.context,
+  };
 }
 
 const fade = {

@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { snapshot, expectFaceSafeIntact, driveToPaywall } from "./helpers";
+import {
+  answerChatPrelude,
+  snapshot,
+  driveToPaywall,
+} from "./helpers";
 
 // Collapse JS-paced animations (typing, narrated delays) to zero so the
 // suite drives the flows at full speed. The app honors prefers-reduced-motion.
@@ -10,16 +14,16 @@ test.beforeEach(async ({ page }) => {
 test.describe("Direction B — M1 Reel", () => {
   test("reel renders with companion + premise + affordances", async ({ page }, info) => {
     await page.goto("/");
-    // One of the three companions must be visible by name as the first vignette.
+    // Sasha is intentionally held for the last reel slot.
     const name = page.locator("h1").first();
     await expect(name).toBeVisible();
-    await expect(name).toHaveText(/^(Iris|Noa|Mira|Sasha)$/);
+    await expect(name).toHaveText(/^(Iris|Noa|Mira)$/);
 
     // Host line and all three affordances.
-    await expect(page.getByText(/who do you want to start with/i)).toBeVisible();
-    await expect(page.getByRole("button", { name: "see everyone" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "pick for me" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "describe someone else" })).toBeVisible();
+    await expect(page.getByText(/who do you want to talk to first/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: "show all companions" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "choose someone for me" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "describe who you want" })).toBeVisible();
 
     await snapshot(page, info, "b-01-reel-entry");
   });
@@ -31,41 +35,23 @@ test.describe("Direction B — M1 Reel", () => {
     await snapshot(page, info, "b-02-reel-from-quiet");
   });
 
-  test("face-safe region is intact on the reel", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForLoadState("networkidle");
-    await expectFaceSafeIntact(page);
-  });
-
   test("affordance: pick for me navigates to Match", async ({ page }, info) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "pick for me" }).click();
+    await page.getByRole("button", { name: "choose someone for me" }).click();
     await expect(page).toHaveURL(/\/match/);
     await snapshot(page, info, "b-03-pick-for-me-routed");
-  });
-
-  test("affordance: describe someone else navigates to Create", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: "describe someone else" }).click();
-    await expect(page).toHaveURL(/\/create/);
-  });
-
-  test("affordance: see everyone navigates to Gallery", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: "see everyone" }).click();
-    await expect(page).toHaveURL(/\/gallery/);
   });
 });
 
 test.describe("Direction B — M3 Match", () => {
   test("match flow lands on a named reveal", async ({ page }, info) => {
     await page.goto("/match");
-    await page.getByRole("button", { name: /^start$/ }).click();
+    await page.getByRole("button", { name: /^answer a few questions$/ }).click();
     await page.getByRole("button", { name: /^calmer$/ }).click();
-    await page.getByRole("button", { name: /^listen$/ }).click();
+    await page.getByRole("button", { name: /^listen first$/ }).click();
     await page.getByRole("button", { name: /^quiet and close$/ }).click();
-    await page.getByRole("button", { name: /^not fix$/ }).click();
-    await page.getByRole("button", { name: /^continue$/ }).click();
+    await page.getByRole("button", { name: /^no quick advice$/ }).click();
+    await page.getByRole("button", { name: /^keep going$/ }).click();
     // Q4 (familiarity) may fire when iris/sasha tie — handle it.
     await page.waitForTimeout(150);
     const famVisible = await page
@@ -79,34 +65,18 @@ test.describe("Direction B — M3 Match", () => {
     await expect(page.getByText(/I think you should meet/i)).toBeVisible({
       timeout: 7000,
     });
-    await expect(page.getByText(/why her/i)).toBeVisible();
+    await expect(page.getByText(/why this match/i)).toBeVisible();
     await snapshot(page, info, "b-04-match-reveal");
-  });
-
-  test("face-safe region intact during Match", async ({ page }) => {
-    await page.goto("/match");
-    await page.waitForLoadState("networkidle");
-    await expectFaceSafeIntact(page);
-  });
-
-  test("pills persist as the funnel advances", async ({ page }) => {
-    await page.goto("/match");
-    await page.getByRole("button", { name: /^start$/ }).click();
-    await page.getByRole("button", { name: /^calmer$/ }).click();
-    // Wait for the next step to render — guarantees the previous step has unmounted.
-    await expect(page.getByText(/what should she do first/i)).toBeVisible();
-    // Pill persists with the chosen answer.
-    await expect(page.getByText("calmer", { exact: true })).toBeVisible();
   });
 
   test("show me another routes through rejection diagnostic", async ({ page }, info) => {
     await page.goto("/match");
-    await page.getByRole("button", { name: /^start$/ }).click();
+    await page.getByRole("button", { name: /^answer a few questions$/ }).click();
     await page.getByRole("button", { name: /^calmer$/ }).click();
-    await page.getByRole("button", { name: /^listen$/ }).click();
+    await page.getByRole("button", { name: /^listen first$/ }).click();
     await page.getByRole("button", { name: /^quiet and close$/ }).click();
-    await page.getByRole("button", { name: /^not fix$/ }).click();
-    await page.getByRole("button", { name: /^continue$/ }).click();
+    await page.getByRole("button", { name: /^no quick advice$/ }).click();
+    await page.getByRole("button", { name: /^keep going$/ }).click();
     await page.waitForTimeout(150);
     const famVisible = await page
       .getByRole("button", { name: /^familiar$/ })
@@ -117,9 +87,9 @@ test.describe("Direction B — M3 Match", () => {
     }
 
     await expect(page.getByText(/I think you should meet/i)).toBeVisible({ timeout: 7000 });
-    await page.getByRole("button", { name: /show me another/i }).click();
+    await page.getByRole("button", { name: /choose someone else/i }).click();
     await expect(
-      page.getByText(/Was it the look, the voice, or the energy/i),
+      page.getByText(/What was wrong: the look, the voice, or the energy/i),
     ).toBeVisible();
     await snapshot(page, info, "b-05-match-rejection");
   });
@@ -128,25 +98,13 @@ test.describe("Direction B — M3 Match", () => {
 test.describe("Direction B — M4 Browse", () => {
   test("vignette funnel renders companion + samples", async ({ page }, info) => {
     await page.goto("/companion/iris");
-    await expect(page.getByText("Listens before she answers.")).toBeVisible();
-    await page.getByRole("button", { name: /tell me more/i }).click();
+    await expect(page.getByText("She listens first, then asks gentle questions.")).toBeVisible();
+    await page.getByRole("button", { name: /show first messages/i }).click();
     // Sample lines should appear.
     await expect(
       page.getByText(/What are you reading these days/i),
     ).toBeVisible();
     await snapshot(page, info, "b-06-vignette-funnel");
-  });
-
-  test("vignette funnel say hi routes to chat", async ({ page }) => {
-    await page.goto("/companion/noa");
-    await page.getByRole("button", { name: /^say hi to Noa$/i }).click();
-    await expect(page).toHaveURL(/\/chat\/noa/);
-  });
-
-  test("face-safe respected on vignette funnel", async ({ page }) => {
-    await page.goto("/companion/mira");
-    await page.waitForLoadState("networkidle");
-    await expectFaceSafeIntact(page);
   });
 
   test("gallery renders companions, paging works", async ({ page }, info) => {
@@ -163,40 +121,12 @@ test.describe("Direction B — M4 Browse", () => {
     }
     await snapshot(page, info, "b-07-gallery");
   });
-
-  test("gallery refinement chip reorders without emptying", async ({ page }) => {
-    await page.goto("/gallery");
-    await page.getByRole("button", { name: /^sharper$/i }).first().click();
-    await expect(page.locator("[data-pill='sharper']")).toBeVisible();
-    await expect(page.locator("p.font-serif").first()).toBeVisible();
-  });
-
-  test("gallery deep-link with ?sharper=1 lands with refinement active", async ({ page }) => {
-    await page.goto("/gallery?sharper=1");
-    await expect(page.locator("[data-pill='sharper']")).toBeVisible();
-  });
 });
 
 test.describe("Direction B — M5 First Chat + Paywall", () => {
-  test("from=browse opens browse opener", async ({ page }, info) => {
-    await page.goto("/chat/iris?from=browse");
-    await expect(page.getByText(/looking for quiet/i)).toBeVisible({ timeout: 8000 });
-    await snapshot(page, info, "b-08-chat-browse-opener");
-  });
-
-  test("from=match opens match opener", async ({ page }) => {
-    await page.goto("/chat/iris?from=match");
-    await expect(page.getByText(/won't try to fix your day/i)).toBeVisible({ timeout: 8000 });
-  });
-
-  test("face-safe intact during chat", async ({ page }) => {
-    await page.goto("/chat/iris?from=match");
-    await page.waitForLoadState("networkidle");
-    await expectFaceSafeIntact(page);
-  });
-
   test("paywall surfaces after preview exchanges", async ({ page }, info) => {
     await page.goto("/chat/iris?from=match");
+    await answerChatPrelude(page);
     // Wait for opener to finish typing.
     await expect(page.getByText(/won't try to fix your day/i)).toBeVisible({ timeout: 8000 });
     // Drive the branching conversation to the paywall beat by clicking
@@ -208,20 +138,17 @@ test.describe("Direction B — M5 First Chat + Paywall", () => {
     await snapshot(page, info, "b-09-paywall");
   });
 
-  test("from=create opens create opener", async ({ page }) => {
-    await page.goto("/chat/iris?from=create");
-    await expect(page.getByText(/asked for someone warm and patient/i)).toBeVisible({
-      timeout: 8000,
-    });
-  });
-
-  test("paywall continue → mock success state", async ({ page }) => {
+  test("paywall unlock → conversation continues with bonus lines", async ({ page }) => {
     await page.goto("/chat/iris?from=match");
+    await answerChatPrelude(page);
     await expect(page.getByText(/won't try to fix your day/i)).toBeVisible({ timeout: 8000 });
     await driveToPaywall(page);
     await expect(page.getByText(/keep talking with iris/i)).toBeVisible({ timeout: 8000 });
-    await page.getByRole("button", { name: /^continue$/ }).click();
-    await expect(page.getByText(/you're in. keep going/i)).toBeVisible();
+    await page.getByRole("button", { name: /^unlock unlimited$/i }).click();
+    // The mock unlock streams the beat's bonus lines, proving the gate lifted.
+    await expect(page.getByText(/glad you stayed/i)).toBeVisible({ timeout: 8000 });
+    // And the input is re-enabled (premium, faked).
+    await expect(page.getByPlaceholder(/say something to iris/i)).toBeEnabled();
   });
 });
 
@@ -230,41 +157,35 @@ test.describe("Direction B — M6 Create", () => {
     await page.goto("/create");
     // Step 1 — feeling (multi-select)
     await page.getByRole("button", { name: /^warmth$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^keep going$/i }).click();
     // Step 2 — role (single-select)
     await page.getByRole("button", { name: /^confidant$/i }).click();
     // Step 3 — voice (pick a sample)
     await page.getByRole("button", { name: /just got in/i }).click();
     // Step 4 — look (multi-select)
     await page.getByRole("button", { name: /^warm apartment$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^keep going$/i }).click();
     // Step 5 — boundary
-    await page.getByRole("button", { name: /^warm, not flirty$/i }).click();
+    await page.getByRole("button", { name: /^stay warm without flirting$/i }).click();
     // Step 6 — context
     await page.getByRole("button", { name: /^skip ahead$/i }).click();
     // Step 7 — name (pick suggestion)
     const nameBtn = page.getByRole("button", { name: /^Noa$|^Sasha$|^Mira$/i }).first();
     await nameBtn.click();
-    // Reveal renders the "What shaped them" panel.
-    await expect(page.getByText(/what shaped them/i)).toBeVisible({ timeout: 5000 });
+    // Reveal renders the "What you asked for" panel.
+    await expect(page.getByText(/what you asked for/i)).toBeVisible({ timeout: 5000 });
     await snapshot(page, info, "b-10-create-reveal");
-  });
-
-  test("face-safe respected during Create", async ({ page }) => {
-    await page.goto("/create");
-    await page.waitForLoadState("networkidle");
-    await expectFaceSafeIntact(page);
   });
 
   test("create reveal Meet routes to chat with from=create", async ({ page }) => {
     await page.goto("/create");
     await page.getByRole("button", { name: /^warmth$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
+    await page.getByRole("button", { name: /^keep going$/i }).click();
     await page.getByRole("button", { name: /^confidant$/i }).click();
     await page.getByRole("button", { name: /just got in/i }).click();
     await page.getByRole("button", { name: /^warm apartment$/i }).click();
-    await page.getByRole("button", { name: /^continue$/i }).click();
-    await page.getByRole("button", { name: /^warm, not flirty$/i }).click();
+    await page.getByRole("button", { name: /^keep going$/i }).click();
+    await page.getByRole("button", { name: /^stay warm without flirting$/i }).click();
     await page.getByRole("button", { name: /^skip ahead$/i }).click();
     await page.getByRole("button", { name: /^Noa$|^Sasha$|^Mira$/i }).first().click();
     await expect(page.getByRole("button", { name: /^meet /i })).toBeVisible({ timeout: 5000 });

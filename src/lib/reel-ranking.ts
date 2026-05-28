@@ -57,6 +57,10 @@ export function rankCompanions(
     return { c, score: base + aff + j + penalty };
   });
 
-  scored.sort((a, b) => b.score - a.score);
+  scored.sort((a, b) => {
+    if (a.c.id === "sasha" && b.c.id !== "sasha") return 1;
+    if (b.c.id === "sasha" && a.c.id !== "sasha") return -1;
+    return b.score - a.score;
+  });
   return scored.map((s) => s.c);
 }

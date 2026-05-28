@@ -96,6 +96,8 @@ The existing app code can be reused selectively, but it should be treated as leg
 - `[x]` First conversation
   - Browse, Match, default companion, and Specific paths all arrive in chat.
   - First message reflects the user's path and recent choices.
+  - First chat now asks what the companion should call the user before the scripted preview starts. The user can type a name/alias or choose an alias-style answer such as "call me stranger"; there is no "skip for now" name escape.
+  - First chat now asks one lightweight hello-context line when the funnel has not already captured one, then folds name, context, and browse/match/create signals into the opening beat.
   - The large portrait remains present beside or above the conversation.
   - Chat only needs the first preview exchange to feel designed.
 

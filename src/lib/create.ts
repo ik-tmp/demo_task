@@ -39,13 +39,13 @@ const dedicatedTemplates: Template[] = [
     id: "playful",
     name: "Juno",
     asset: "/companions/create/template-4-playful.png",
-    premise: "Mischief at a kitchen counter. Juno tells you the joke, then asks the real question.",
+    premise: "Playful and direct. Juno tells the joke, then asks what's really going on.",
   },
   {
     id: "gentle",
     name: "Hana",
     asset: "/companions/create/template-5-gentle.png",
-    premise: "Calm and patient. Hana stays with the long version.",
+    premise: "Calm and patient. Hana gives you time to explain.",
   },
 ];
 
@@ -224,7 +224,7 @@ export function composePremise(answers: CreateAnswers, name: string): string {
   const f = answers.feelings?.[0];
   const role = answers.role;
   if (f && role) {
-    return `${capitalize(feelingPhrase[f])} ${role}. ${name} listens before she suggests.`;
+    return `${capitalize(feelingPhrase[f])} ${role}. ${name} listens before she gives advice.`;
   }
   if (f) return `${capitalize(feelingPhrase[f])}. ${name} keeps things grounded.`;
   return `${name} is here when you need her.`;

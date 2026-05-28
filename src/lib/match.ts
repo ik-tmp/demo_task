@@ -20,6 +20,7 @@ export type MatchAnswers = {
   texture?: TextureId;
   avoid?: AvoidId[];
   familiarity?: FamiliarityId;
+  freeText?: Partial<Record<MatchAxis, string>>;
 };
 
 type ScoreTable = Record<string, Record<string, number>>;
@@ -113,9 +114,12 @@ export function composeRevealLines(
   answers: MatchAnswers,
 ): [string, string, string] {
   const copy = matchDialogue.reveal;
-  const feel = answers.feeling
-    ? `Looking for ${copy.feelingPhrase[answers.feeling]}. ${copy.feelingCounterweight[answers.feeling]}`
-    : "Looking for someone you can settle into.";
+  const freeText = firstFreeText(answers);
+  const feel = freeText
+    ? `You said "${truncate(freeText, 54)}." I kept that in the match.`
+    : answers.feeling
+      ? `Looking for ${copy.feelingPhrase[answers.feeling]}. ${copy.feelingCounterweight[answers.feeling]}`
+      : "Looking for someone you can settle into.";
   const role = answers.role
     ? copy.rolePhrase[answers.role]
     : "Reads the room before she answers.";
@@ -132,6 +136,12 @@ export function composeWhyHer(
 ): string[] {
   const copy = matchDialogue.reveal;
   const bullets: string[] = [];
+  const freeText = firstFreeText(answers);
+  if (freeText) {
+    bullets.push(
+      `You wrote "${truncate(freeText, 48)}" - ${decap(companion.rationale.voice)}`,
+    );
+  }
   if (answers.feeling) {
     bullets.push(
       `You wanted ${copy.feelingPhrase[answers.feeling]} — ${decap(companion.rationale.energy)}`,
@@ -139,7 +149,9 @@ export function composeWhyHer(
   }
   if (answers.role) {
     const rolePhraseShort =
-      answers.role === "i-dont-know" ? "you weren't sure" : answers.role;
+      answers.role === "i-dont-know"
+        ? "you weren't sure"
+        : choiceLabel("role", answers.role);
     bullets.push(`You said ${rolePhraseShort} — ${decap(companion.rationale.look)}`);
   }
   if (answers.texture) {
@@ -150,7 +162,7 @@ export function composeWhyHer(
   if (answers.avoid && answers.avoid.length > 0) {
     const a = answers.avoid[0];
     const phrase = copy.avoidRationale[a] ?? "keeps it light";
-    bullets.push(`You said ${a.replace(/-/g, " ")} — she ${phrase}.`);
+    bullets.push(`You said ${choiceLabel("avoid", a)} — she ${phrase}.`);
   }
   if (bullets.length < 3) {
     bullets.push(companion.rationale.voice);
@@ -158,8 +170,26 @@ export function composeWhyHer(
   return bullets.slice(0, 3);
 }
 
+function firstFreeText(answers: MatchAnswers): string | null {
+  const freeText = answers.freeText;
+  if (!freeText) return null;
+  for (const axis of ["feeling", "role", "texture", "avoid", "familiarity"] as MatchAxis[]) {
+    const value = freeText[axis]?.trim();
+    if (value) return value;
+  }
+  return null;
+}
+
+function choiceLabel(axis: keyof typeof matchDialogue.choices, id: string): string {
+  return matchDialogue.choices[axis].find((choice) => choice.id === id)?.label ?? id;
+}
+
 function decap(s: string): string {
   return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
+function truncate(s: string, n: number): string {
+  return s.length <= n ? s : `${s.slice(0, n - 3)}...`;
 }
 
 export function reactionFor(axis: MatchAxis, id: string): string | null {
