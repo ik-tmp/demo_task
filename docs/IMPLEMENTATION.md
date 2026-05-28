@@ -2,251 +2,134 @@
 
 Last updated: May 28, 2026
 
-This document tracks progress against the rewritten product plan in `docs/PLAN.md`. The project has pivoted from a route-based browse/match/create prototype to a conversational web funnel with a large evolving companion portrait.
-
-The existing app code can be reused selectively, but it should be treated as legacy exploration until it is deliberately adapted to the new direction. Do not count an old route or component as complete just because it exists in the repo.
+This document tracks the active Casting Hall implementation described in `docs/DIRECTION-B.md`. Direction A and the earlier proposal docs have been removed so this tracker is the only implementation status document.
 
 ## Status Key
 
 - `[x]` Done
-- `[~]` Partial
+- `[~]` Partial or needs polish
 - `[ ]` Not started
-- `[legacy]` Exists, but belongs to the previous direction
 
-## Current Artifacts
+## Current App Shape
 
-- `[x]` New product/design plan
-  - `docs/PLAN.md` now defines the new direction: chat-driven funnel, default companion, "I'm waiting for someone else" specific-companion path, best-fit fallback logic, evolving portraits, and paywall after preview continuation.
-- `[x]` Portrait-first conversational shell
-  - `src/components/funnel-entry.tsx` is now the primary product surface.
-  - `/`, `/browse`, `/match`, `/create`, `/c/[id]`, and `/chat/[id]` all enter the same conversational shell instead of separate route-first legacy surfaces.
-  - The shell supports entry, browse/discovery, quick match, specific-companion shaping, first preview chat, portrait state changes, and the mocked continuation paywall.
-- `[x]` Concept images
-  - `design/concept-01-presence-split.png`
-  - `design/concept-02-mobile-portrait-funnel.png`
-  - `design/concept-03-conversational-creator.png`
-  - `design/concept-04-chat-with-presence.png`
-  - `design/concept-05-default-companion-entry.png`
-  - `design/concept-06-preview-continuation-paywall.png`
-  - `design/concept-07-reel-cold-open.png`
-  - `design/concept-08-match-reveal.png`
-  - `design/concept-09-create-reveal.png`
-  - Direction B screen mockups were generated from `docs/ASSET-PROMPTS.md` with the built-in image generation tool; originals remain under `$CODEX_HOME/generated_images/`.
-- `[x]` Context notes
-  - `design/context-notes.md` summarizes the plan/site takeaways and generated concept framing.
-- `[x]` Mira portrait asset set
-  - `public/companions/mira/` contains one generated realistic vertical/mobile companion set for the default companion direction: neutral, warm, curious, closer, and final chat.
-  - `public/companions/mira/desktop/` contains a matching desktop-native `1672x941` wide set for the split-presence mockups, so desktop no longer depends on cropping vertical sources.
-  - `public/companions/mira/thumbnails/` contains matching `360x360` state-strip crops.
-  - Source generations were created with the built-in image generation tool and copied into the project; originals remain under `$CODEX_HOME/generated_images/`.
-- `[x]` Direction B Tier 1 cast asset floor
-  - Generated Iris and Noa as full five-state wide portrait sets in `public/companions/iris/` and `public/companions/noa/`.
-  - Generated dedicated cold-open reel stills at `public/companions/iris/iris-reel.png` and `public/companions/noa/noa-reel.png`.
-  - Generated Mira's reel-specific city-night vignette at `public/companions/mira/mira-reel.png`.
-  - These assets are copied into the repo and tracked in `docs/ASSET-PROMPTS.md`; they are generated art assets only and are not yet wired into a Direction B reel implementation.
-- `[x]` Direction B remaining generated assets
-  - Generated Sasha's full wide portrait set plus `sasha-reel.png` in `public/companions/sasha/`.
-  - Generated Create-path in-progress frames and net-new deterministic templates in `public/companions/create/`.
-  - Generated shared fallback backdrops in `public/companions/_shared/`.
-  - These assets are copied into the repo and tracked in `docs/ASSET-PROMPTS.md`.
-- `[legacy]` Existing Next.js prototype
-  - The old browse/match/create/chat route implementations have been replaced by wrappers around the new conversational shell.
-  - Some older primitive components and static character data remain available, but the product flow is no longer driven by the old route map.
+- `[x]` `/` renders the cinematic reel through `src/components/reel/reel.tsx`.
+- `[x]` `/gallery` renders the full-screen companion gallery.
+- `[x]` `/companion/[id]` renders the short browse/vignette funnel.
+- `[x]` `/match` renders quick match.
+- `[x]` `/create` renders create/specific-companion composition.
+- `[x]` `/chat/[id]` renders preview chat and the mock paywall.
+- `[x]` Retired Direction A routes are gone from `src/app`; there is no `/browse` or `/c/[id]`.
 
-## Product Scope Tracker
+## Implemented Surfaces
 
-- `[x]` First-screen conversational shell
-  - App opens directly into the product, not a landing page.
-  - Large realistic default companion portrait is visible immediately.
-  - Chat asks the first question and offers: browse, match, stay with default companion, or "I'm waiting for someone else."
-  - No dedicated memory / "what I know" panel.
+- `[x]` Companion data model
+  - `src/data/companions.json` contains Iris, Noa, Mira, and Sasha.
+  - Each record includes premise, energy, scene, assets, face-safe geometry, ranking weights, tag axes, sample lines, openers, and rationale copy.
+  - `src/types/companion.ts` defines the typed shape.
 
-- `[x]` Portrait state system
-  - Define how companion visuals change after answers: warmer, curious, closer, final chat state.
-  - One Mira/default companion set now exists with neutral, warm, curious, closer, and final chat states.
-  - The live funnel now switches the large portrait and state thumbnails as the user browses, matches, shapes a specific companion, or enters chat.
-  - Additional companion portrait sets are deferred per current user direction: use the one generated Mira set for now.
+- `[x]` Reel cold open
+  - Full-bleed reel with generated `*-reel.png` assets.
+  - Client-side ranking uses time of day, `?from=`, prior rejection ids, and deterministic jitter.
+  - Sasha is present as the fourth cast member but sorted after the first three launch energies.
+  - Users can open a companion, show all companions, choose someone, or describe who they want.
 
-- `[x]` Shared funnel conversation
-  - One chat interaction model supports browse, quick match, default companion, and specific-companion paths.
-  - Branching is dynamic and conversational, not a visible wizard.
-  - Free text can jump deeper into the path when the user is specific.
-  - In-shell back behavior restores previous conversation state without clearing earlier answers.
-  - Funnel state persists in `sessionStorage` per route-backed session key.
-  - Dialogue and reviewable surface copy now live in `src/data/dialogues.ts`, `src/data/match-dialogue.ts`, `src/data/create-dialogue.ts`, and `src/data/surface-dialogue.ts`; TSX components should stay mostly rendering/flow code.
+- `[x]` Shared funnel shell and layout primitives
+  - `FunnelShell` provides the portrait/chat layout used by browse, match, create, and chat.
+  - `FaceSafeFrame` exposes face-safe CSS variables.
+  - Mobile chat surfaces are capped below the face-safe region and scroll internally.
+  - Desktop uses a fixed 34/66 chat/portrait split in the shared shell.
+  - Standalone `ChatSheet` and `DesktopSplit` primitives exist, though the current shell implements its own layout.
 
-- `[x]` Discover existing companions
-  - Browse starts through chat and can open a fuller discovery view.
-  - Restrictive filters silently broaden to best-fit results.
-  - The product always shows viable companions instead of exposing "no match" logic.
+- `[x]` Browse path
+  - Tapping a reel face opens `VignetteFunnel`.
+  - Users can say hi, view sample first messages, ask up to three deterministic preview questions, show softer/sharper, or open the gallery.
+  - Gallery uses full-screen vignette presentation, search, refinement chips, ranking, persistent pills, and best-fit ordering.
 
-- `[x]` Quick match
-  - Ask only enough questions to produce a credible companion.
-  - Current flow includes feeling, role, first-message texture, avoidances, and optional familiarity.
-  - Use a narrated reveal rather than a spinner.
-  - Rejection becomes signal for the next result.
-  - Reveal explains fit in human language, not scoring terms.
+- `[x]` Match path
+  - Match asks feeling, role, message texture, avoidances, and optional familiarity.
+  - The candidate portrait resolves from blurred to sharp.
+  - Reveal lines and "why this match" bullets are composed from the user's answers.
+  - Rejection asks look/voice/energy and routes to another reveal or create after two misses.
 
-- `[x]` Specific companion path
-  - Replace "make someone" framing with "I'm waiting for someone else."
-  - User describes who they hoped would answer.
-  - Follow-up questions shape feeling, role, voice, pace, appearance, boundaries, first-message context, and name.
-  - Preview shows portrait, name, first message, and what shaped them.
+- `[x]` Create path
+  - Create asks feeling, role, voice sample, look, boundary, context, and name.
+  - Free text can back-fill inferred pills and skip forward.
+  - In-progress vignette stages are shown while the user answers.
+  - Reveal can use either a launch companion or a dedicated generated template.
+  - "What you asked for" and first-message preview are shown before chat.
 
-- `[x]` First conversation
-  - Browse, Match, default companion, and Specific paths all arrive in chat.
-  - First message reflects the user's path and recent choices.
-  - First chat now asks what the companion should call the user before the scripted preview starts. The user can type a name/alias or choose an alias-style answer such as "call me stranger"; there is no "skip for now" name escape.
-  - First chat now asks one lightweight hello-context line when the funnel has not already captured one, then folds name, context, and browse/match/create signals into the opening beat.
-  - The large portrait remains present beside or above the conversation.
-  - Chat only needs the first preview exchange to feel designed.
+- `[x]` First chat and paywall
+  - Chat asks for a name/alias and one context line when missing.
+  - First messages are personalized by source: browse, match, create, or direct.
+  - Deterministic chat branches run for the preview.
+  - Paywall appears only after the preview is spent.
+  - Mock unlock streams bonus lines and re-enables the input.
 
-- `[x]` Mock paywall
-  - Appears only when the user tries to continue beyond the preview conversation.
-  - Does not block reaching the first conversation.
-  - No real payment, auth, checkout, or account setup.
+- `[x]` Assets
+  - Iris, Noa, Mira, and Sasha each have reel, neutral, warm, curious, closer, and final-chat assets.
+  - Mira still has legacy desktop and thumbnail subdirectories; current loaders support that shape.
+  - Create in-progress stages, create templates, and shared fallback assets exist.
+  - Asset prompts and inventory live in `docs/ASSET-PROMPTS.md`.
 
-- `[x]` States and recovery
-  - Loading uses narrative copy and portrait transitions, not generic spinners.
-  - Restrictive choices still produce best-fit companions.
-  - Variant/image fallback keeps the current viable portrait and offers adjacent directions.
-  - Chat send and paywall mock failures are inline and calm.
-  - Implemented: narrative match reveal, best-fit browse fallback, richer browse refinements, image fallback, sensitive-input guard, chat send failure copy, paywall success/dismissal, and a natural restore-access paywall error path.
+- `[x]` Playwright coverage
+  - `tests/e2e/direction-b.spec.ts` covers reel, `?from=quiet` ranking, match reveal/rejection, vignette funnel, gallery, first chat/paywall, and create reveal/chat handoff.
+  - Screenshots are written under `test-results/screenshots/{desktop,mobile}/`.
 
-- `[~]` Mobile pass — **known broken, do not treat as baseline for Direction B**
-  - Portrait-first layout.
-  - Bottom chat sheet.
-  - Large tap targets.
-  - Portrait state thumbnails or subtle confirmation moments.
-  - **Known issues (user-flagged 2026-05-27):** chat sheet is not responsive enough and sometimes covers the companion's face. The face-safe-region constraint defined in `docs/DIRECTION-B.md` §4 Layout Constraints is the hard rule going forward — the current implementation violates it. Do not port the existing mobile sheet behavior into the Direction B rebuild without fixing it.
+## Known Gaps
 
-- `[~]` Desktop pass — **known suboptimal, rework required for Direction B**
-  - Split-presence layout: conversation plus large portrait.
-  - Optional portrait state strip.
-  - Minimal navigation.
-  - **Known issues (user-flagged 2026-05-27):** layout is not ideal (specifics not given). Direction B calls for the portrait column to take 60–70% of viewport width with the chat column fixed-narrower, rather than the existing near-equal split. See `docs/DIRECTION-B.md` §4 Layout Constraints for the cross-surface rules.
+- `[~]` Face-safe tests
+  - `expectFaceSafeIntact` exists in `tests/e2e/helpers.ts`, but the Direction B specs do not currently call it.
+  - Add assertions for reel, funnel, reveal, chat, paywall, and gallery breakpoints.
 
-- `[x]` Copy pass
-  - Remove form/funnel language.
-  - Avoid "submit", "next step", "complete your profile", and "make someone."
-  - Use direct conversational copy: "stay with you", "I'm waiting for someone else", "keep talking", "say hi."
+- `[~]` Gallery mobile behavior
+  - Gallery is full-screen and ranked, but vertical paging/swipe behavior from the spec is not implemented.
+  - Current controls rely on search/chips and desktop arrows.
 
-## Legacy Code Audit
+- `[~]` Match branch nuance
+  - Dynamic familiarity Q4 exists.
+  - The "I don't know yet" softer branch is not a distinct question yet; it currently continues through the standard flow.
+  - "Show similar" from the original spec is not a separate action.
 
-Before implementation starts, audit the current codebase and decide what to keep:
+- `[~]` Create polish
+  - Boundary is always part of the current flow rather than only appearing when signal demands it.
+  - The reveal does not include the final adjust row yet.
+  - Synthetic template reveals route into the nearest launch companion chat instead of a fully synthetic chat identity.
 
-- `[x]` Keep, adapt, or replace the app shell.
-- `[x]` Keep, adapt, or replace UI primitives.
-- `[x]` Replace the old opening screen if it cannot support portrait-first chat.
-- `[x]` Replace or heavily revise `/browse`, `/match`, `/create`, and `/chat/[id]` if they keep the old route-first mental model.
-- `[x]` Decide whether existing static character data is useful for new seed companions.
-- `[x]` Decide whether existing Playwright screenshots still match the new product surface.
+- `[~]` Recovery states
+  - Gallery never empties and preview matching always produces a candidate.
+  - Sensitive-input guard, explicit image-load failure copy, chat send retry, and paywall error state still need implementation.
 
-## Asset Needs
+- `[~]` Layout primitive cleanup
+  - `ChatSheet` and `DesktopSplit` are available but not wired into the current `FunnelShell`.
+  - Either adopt them in the shell or remove them if they stay unused after layout tests land.
 
-- `[x]` Seed companion portrait set for current scope.
-  - One Mira/default companion set generated and wired throughout the UI.
-  - Direction B now has generated cast sets for Iris, Noa, and Sasha, plus reel vignettes for Iris, Noa, Mira, and Sasha.
-- `[x]` Direction B Tier 1 floor cast assets.
-  - Iris:
-    - `public/companions/iris/iris-neutral.png`
-    - `public/companions/iris/iris-reel.png`
-    - `public/companions/iris/iris-warm.png`
-    - `public/companions/iris/iris-curious.png`
-    - `public/companions/iris/iris-closer.png`
-    - `public/companions/iris/iris-final-chat.png`
-  - Noa:
-    - `public/companions/noa/noa-neutral.png`
-    - `public/companions/noa/noa-reel.png`
-    - `public/companions/noa/noa-warm.png`
-    - `public/companions/noa/noa-curious.png`
-    - `public/companions/noa/noa-closer.png`
-    - `public/companions/noa/noa-final-chat.png`
-  - Mira reel:
-    - `public/companions/mira/mira-reel.png`
-  - All generated Tier 1 files are `1672x941` PNGs. They match the existing Mira desktop-wide size but are lower than the aspirational `docs/ASSET-PROMPTS.md` target of `>=2944x1656`.
-- `[x]` Direction B Sasha, Create, and shared fallback assets.
-  - Sasha:
-    - `public/companions/sasha/sasha-neutral.png`
-    - `public/companions/sasha/sasha-reel.png`
-    - `public/companions/sasha/sasha-warm.png`
-    - `public/companions/sasha/sasha-curious.png`
-    - `public/companions/sasha/sasha-closer.png`
-    - `public/companions/sasha/sasha-final-chat.png`
-  - Create:
-    - `public/companions/create/in-progress-1.png`
-    - `public/companions/create/in-progress-2.png`
-    - `public/companions/create/in-progress-3.png`
-    - `public/companions/create/in-progress-4.png`
-    - `public/companions/create/template-2-vera.png`
-    - `public/companions/create/template-4-playful.png`
-    - `public/companions/create/template-5-gentle.png`
-  - Shared:
-    - `public/companions/_shared/portrait-blur.png`
-    - `public/companions/_shared/soft-fail.png`
-    - `public/companions/_shared/ambient-between.png`
-  - All files in this pass are `1672x941` PNGs. `in-progress-4.png` was derived from Noa's neutral asset with a local blur per `docs/ASSET-PROMPTS.md`.
-- `[x]` Default companion portrait and states.
-  - Desktop-wide:
-    - `public/companions/mira/desktop/mira-neutral-desktop.png`
-    - `public/companions/mira/desktop/mira-warm-desktop.png`
-    - `public/companions/mira/desktop/mira-curious-desktop.png`
-    - `public/companions/mira/desktop/mira-closer-desktop.png`
-    - `public/companions/mira/desktop/mira-final-chat-desktop.png`
-  - Vertical/mobile:
-    - `public/companions/mira/mira-neutral.png`
-    - `public/companions/mira/mira-warm.png`
-    - `public/companions/mira/mira-curious.png`
-    - `public/companions/mira/mira-closer.png`
-    - `public/companions/mira/mira-final-chat.png`
-- `[x]` Quick-match reveal portrait states.
-  - Quick match uses deterministic Mira state transitions and selected seed-character copy until additional companion portrait sets are added.
-- `[x]` Specific-companion in-progress and final portrait states.
-  - The "I'm waiting for someone else" path uses neutral, warm, curious, closer, and final Mira states to imply generation/progression with one generated asset set.
-- `[x]` Mobile crops for portrait-first layout.
-  - Mira originals are vertical portrait assets and frame the mobile-first shell cleanly in current screenshots.
-- `[x]` Desktop-wide portrait assets.
-  - Mira desktop originals match the design mockup aspect (`1672x941`) and include right-side safe space for desktop overlays/state strips.
-- `[x]` Blurred/soft fallback backgrounds.
-  - The portrait surface falls back to a soft dark room gradient if image loading fails.
+## Next Priorities
 
-## Suggested Next Build Step
+1. Wire `expectFaceSafeIntact` into the e2e suite and add viewport-specific layout checks.
+2. Review generated screenshots for reel, match, create, chat, and paywall after the current uncommitted UI work settles.
+3. Finish gallery mobile paging/swipe behavior or explicitly revise the spec if the current gallery is the intended MVP.
+4. Add create reveal adjust chips and improve synthetic-template chat handoff.
+5. Add recovery states: sensitive-input guard, image fallback copy, chat retry, paywall error.
 
-The product direction has pivoted from `docs/PLAN.md` (Direction A) to `docs/DIRECTION-B.md` (Direction B — Casting Hall with funnel). The existing end-to-end demo built for Direction A still works, but it does not match the new direction, and its layout has known failures.
+## Verification Guidance
 
-Priority work for the Direction B rebuild:
+For meaningful code changes, run:
 
-1. **Fix layout failures before anything else.** The mobile chat sheet overlapping the companion's face is the most visible product-promise break in the current build. Resolve face-safe-region enforcement per `docs/DIRECTION-B.md` §4 Layout Constraints across the existing surfaces, so screenshots are presentable while the rest of the rebuild lands.
-2. **Build the reel cold-open** as the new app entry per `docs/DIRECTION-B.md` §4. Replace the default-companion-and-question opening screen.
-3. **Rework Create** into the multi-step composition path (feeling → role → voice → look → name) with an in-progress vignette that resolves into a playable loop, per `docs/DIRECTION-B.md` §8.
-4. **Adapt Browse** into the reel-driven entry + gallery (carousel of vignettes, conversational input + chip row), per `docs/DIRECTION-B.md` §6.
-5. **Generate the new cast assets** (Iris, Noa, Sasha) per `docs/ASSET-PROMPTS.md` §A. Mira from Direction A is reused as one of the four cast members.
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
 
-Deferred until the above lands:
+For visible UI changes, also run:
 
-- Replace placeholder shared-portrait browse candidates once new portrait sets are available.
-- Continue reviewing screenshots for crop, density, and text-fit regressions as new states are added.
-- If the demo needs deeper editability later, expand one-step back into a visible prior-answer editor without adding a separate memory panel.
+```bash
+npm run test:e2e
+```
 
-## Verification Target
+Review the screenshots under:
 
-When meaningful UI work begins, verify:
+- `test-results/screenshots/desktop/`
+- `test-results/screenshots/mobile/`
 
-- first screen at desktop and mobile sizes
-- one full path to first conversation
-- portrait changes after at least two interactions
-- best-fit fallback never shows a dead-end
-- paywall appears only after the preview exchange
-- **face-safe region is honored across all viewport sizes** (≥360w, ≥768w, ≥1280w, ≥1920w). Chat sheet never covers the face; desktop split gives the portrait 60–70% of viewport width. See `docs/DIRECTION-B.md` §13 Layout Failure Modes for the testable bug list.
-
-Run lint/typecheck/build when implementation changes are made. For visible UI work, use Playwright screenshots and review outputs before handoff.
-
-### Latest Verification
-
-- `npm run lint` passed.
-- `npm run typecheck` passed.
-- `npm run build` passed.
-- `npm run test:e2e` passed: 17 passed, 1 mobile-only skip for the desktop browse search panel.
-- Screenshot artifacts reviewed under:
-  - `test-results/screenshots/desktop/`
-  - `test-results/screenshots/mobile/`
+Face-safe regressions are bugs, not polish. Chat sheets, paywalls, host copy, and controls must not overlap the companion's face-safe region.

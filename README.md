@@ -1,50 +1,29 @@
 # AI Companion Entry
 
-Frontend-only prototype for an AI companion entry experience. The current product direction is a conversational web funnel: the user opens directly into chat with a large realistic companion portrait, answers a few adaptive questions, and reaches a first preview conversation.
+Frontend-only Next.js prototype for a cinematic AI companion entry experience. The current product direction is **Casting Hall**: the app opens on a full-bleed companion reel, then routes the user into browse, quick match, or create. Every path reaches a first preview conversation before the mock paywall appears.
 
-The repo previously explored a route-first browse/match/create flow. The plan has pivoted. Treat existing app code as reusable legacy exploration, not as the final product direction.
+No backend, auth, real payments, analytics, account persistence, real model calls, or runtime image generation are part of this prototype. "AI" behavior is deterministic and local: ranking, matching, text parsing, vignette selection, first-message personalization, and preview chat branching.
 
-## Product Direction
+## Active Product Direction
 
-- Chat-driven funnel, not a classical onboarding form.
-- Large evolving companion portrait visible from the first screen.
-- Default companion is available immediately.
-- Users can browse existing companions, get a quick match, stay with the default companion, or say "I'm waiting for someone else" to shape someone specific.
-- Restrictive answers should still lead to a best-fit companion; do not expose "no match" logic.
-- The first preview conversation starts before any paywall.
-- Mocked paywall appears only when the user tries to continue beyond the preview conversation.
-- No real backend, auth, payments, persistence, analytics, or model calls.
-
-## Design References
-
-Generated concept images live in `design/`:
-
-- `design/concept-01-presence-split.png`
-- `design/concept-02-mobile-portrait-funnel.png`
-- `design/concept-03-conversational-creator.png`
-- `design/concept-04-chat-with-presence.png`
-- `design/concept-05-default-companion-entry.png`
-- `design/concept-06-preview-continuation-paywall.png`
-- `design/context-notes.md`
+- App opens directly into the reel, not a landing page.
+- Users can tap a companion, show all companions, ask the app to choose, or describe who they want.
+- The cast is Iris, Noa, Mira, and Sasha, backed by generated portrait/reel assets.
+- Browse uses a vignette funnel and a full-screen gallery, not a marketplace grid.
+- Match asks a few conversational questions and reveals a companion with a rationale.
+- Create uses feeling, role, voice, look, boundary/context, and name inputs to compose a reveal.
+- First chat asks for a name/alias and one context line if missing, then opens with path-aware copy.
+- The mocked paywall appears only after the preview chat is spent.
 
 ## Docs
 
-- `docs/PLAN.md` describes the target product and design direction.
-- `docs/IMPLEMENTATION.md` tracks progress against the pivoted plan.
+- `docs/DIRECTION-B.md` is the active product and design spec.
+- `docs/IMPLEMENTATION.md` tracks current implementation status and known gaps.
+- `docs/ASSET-PROMPTS.md` stores asset inventory and regeneration prompts.
+- `design/context-notes.md` explains which generated concepts are active references.
 - `AGENTS.md` contains coding-agent guidance for this repo.
 
-## Current Setup
-
-- Next.js `16.2.6` App Router
-- React `19.2.6`
-- TypeScript `6.0.3`
-- Tailwind CSS `4.3.0`
-- Framer Motion `12.40.0`
-- Zustand `5.0.13`
-- Lucide React `1.16.0`
-- ESLint `9.39.4` with `eslint-config-next` `16.2.6`
-
-Package versions were checked against the npm registry on May 26, 2026. ESLint is pinned to the latest compatible v9 release because Next's lint plugin dependencies have not yet widened their peer ranges to ESLint 10. `postcss` is overridden to `8.5.15` so Next's internal PostCSS dependency stays on the patched current line.
+Historical Direction A and proposal docs were removed to avoid conflicting guidance.
 
 ## Getting Started
 
@@ -65,35 +44,42 @@ npm run build        # production build
 npm run format       # Prettier write
 npm run format:check # Prettier check
 npm run test:e2e     # Playwright screenshots
+npm run test:e2e:desktop
 ```
 
-## Existing Routes
+The Playwright suite expects a fresh production build; it boots `next start` on port `4321`.
 
-The current codebase still contains the earlier route-based prototype:
+## Routes
 
-- `/`
-- `/browse`
-- `/c/[id]`
-- `/match`
-- `/create`
-- `/chat/[id]`
-
-These routes may be reused, replaced, or heavily revised. The new product plan is the source of truth.
+- `/` - cinematic reel entry
+- `/gallery` - full-screen companion gallery
+- `/companion/[id]` - short browse/vignette funnel for one companion
+- `/match` - quick match funnel
+- `/create` - create/specific-companion funnel
+- `/chat/[id]` - first preview chat and mock paywall
 
 ## Project Structure
 
 ```text
-design/                 Generated concepts and context notes
-docs/                   Product plan and implementation tracker
-src/app/                App Router pages, layout, global CSS
-src/components/         Shell, funnel, and shared UI primitives
-src/data/characters.json Static companion seed data
-src/lib/                Data access and deterministic helpers
-src/store/              Zustand session state
-src/types/              Shared TypeScript types
-tests/e2e/              Playwright screenshot suite
+design/                  Generated concept images and design notes
+docs/                    Active product, implementation, and asset docs
+public/companions/       Generated companion and fallback assets
+src/app/                 App Router pages, layout, global CSS
+src/components/          Reel, funnel, gallery, chat, layout, and UI components
+src/data/companions.json Companion records and asset maps
+src/data/*.ts            Deterministic dialogue/copy tables
+src/lib/                 Ranking, matching, create, browse, and chat helpers
+src/store/               Zustand session state persisted to sessionStorage
+src/types/               Shared TypeScript types
+tests/e2e/               Direction B Playwright screenshot suite
 ```
 
-## Notes
+## Stack
 
-The demo should present product behavior, not technical AI depth. Keep "AI-like" moments deterministic first: branching questions, match rationale, portrait-state changes, creator suggestions, and first-chat copy.
+- Next.js App Router with TypeScript
+- Tailwind CSS v4 tokens in `src/app/globals.css`
+- Framer Motion for reel, funnel, portrait, and chat transitions
+- Zustand with `sessionStorage` persistence
+- Static companion data and deterministic helpers
+- Hand-rolled primitives in `src/components/ui`
+- Playwright for desktop/mobile screenshot review

@@ -44,6 +44,15 @@ test.describe("Direction B — M1 Reel", () => {
 });
 
 test.describe("Direction B — M3 Match", () => {
+  test("match intro offers the question path", async ({ page }, info) => {
+    await page.goto("/match");
+    await expect(page.getByText(/I can pick someone faster/i)).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /^answer a few questions$/ }),
+    ).toBeVisible();
+    await snapshot(page, info, "b-08-match-intro");
+  });
+
   test("match flow lands on a named reveal", async ({ page }, info) => {
     await page.goto("/match");
     await page.getByRole("button", { name: /^answer a few questions$/ }).click();

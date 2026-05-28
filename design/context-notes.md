@@ -1,32 +1,45 @@
-# Companion Funnel Concept Notes
+# Companion Funnel Design Notes
 
-## Context From `docs/PLAN.md`
+## Active Direction
 
-- The strongest original bet is still useful: the entry experience should be a conversation, not a form.
-- The new direction should shift the emotional center from discovery/browse to presence, memory, and personalization.
-- "AI" can still be represented by deterministic seams in a prototype: match rationale, memory capture, avatar state changes, voice/tone previews, and arrival-aware chat openers.
-- Mobile-first still matters, but desktop can use the extra space for a persistent large portrait beside the chat.
+The active visual direction is Casting Hall: a full-bleed cinematic reel introduces companions before the user chooses browse, match, or create. The product should feel like a cast reveal followed by an intimate first conversation.
 
-## Live Site Takeaways
+## Active Concept References
 
-- `get-honey.today/` is primarily a visual marketplace: dense avatar grid, realism/anime filters, likes, premium/content-pack labels, and immediate "Chat with X" CTAs.
-- `/create-character` starts with a style choice between realistic and anime.
-- `/chat` combines a chat list, selected companion, quick replies, premium prompts, content packs, image/video generation actions, and a canvas/media area.
-- `/pricing` is aggressive commerce: discount countdown, plan cards, featured/review proof, and FAQ.
+- `concept-07-reel-cold-open.png` - active reel entry reference.
+- `concept-08-match-reveal.png` - active narrated match reveal reference.
+- `concept-09-create-reveal.png` - active create reveal reference.
 
-## Direction To Explore
+Use these for layout, tone, density, and palette when building new Direction B surfaces.
 
-- Move away from marketplace density and commerce pressure.
-- Put a large realistic portrait next to the funnel from the first interaction onward.
-- Let each answer visibly change the companion: expression, lighting, distance, wardrobe, room, or remembered traits.
-- Treat onboarding answers as relationship memory, not profile filters.
-- Make long multi-step funnels feel like a slow first conversation with escape hatches, not a numbered wizard.
+## Historical Concepts
 
-## Generated Concepts
+The earlier images are Direction A explorations. They can still help with atmosphere and portrait/chat pairing, but they are not source-of-truth layouts:
 
-- `concept-01-presence-split.png` — desktop split screen: chat funnel plus living portrait and memory trail.
-- `concept-02-mobile-portrait-funnel.png` — mobile portrait-first funnel with state/history strips.
-- `concept-03-conversational-creator.png` — builder flow where preferences assemble a companion beside the chat.
-- `concept-04-chat-with-presence.png` — chat terminus where the companion portrait and learned memory remain present.
-- `concept-05-default-companion-entry.png` — updated desktop first screen with default companion, intent replies, and no memory panel.
-- `concept-06-preview-continuation-paywall.png` — updated mobile preview chat with the paywall shown only when continuing beyond the preview conversation.
+- `concept-01-presence-split.png`
+- `concept-02-mobile-portrait-funnel.png`
+- `concept-03-conversational-creator.png`
+- `concept-04-chat-with-presence.png`
+- `concept-05-default-companion-entry.png`
+- `concept-06-preview-continuation-paywall.png`
+
+Do not revive the single default-companion opening screen from these concepts without explicit product redirection.
+
+## Visual Principles
+
+- Portraits and vignettes are the main product surface.
+- The reel should feel cinematic, not like a marketplace carousel.
+- Chat/funnel UI should sit lightly over or beside the portrait and must never cover the face-safe region.
+- Use dark base colors, warm portrait highlights, editorial names, and restrained motion.
+- Keep controls quiet and direct: text affordances, chips, small icon-supported actions.
+- Avoid generic onboarding, stepper, dashboard, and card-grid language.
+
+## Asset Notes
+
+Runtime assets live under `public/companions/`:
+
+- Cast: `iris`, `noa`, `mira`, `sasha`
+- Create stages/templates: `create`
+- Shared fallbacks: `_shared`
+
+The prompt and inventory source is `docs/ASSET-PROMPTS.md`.

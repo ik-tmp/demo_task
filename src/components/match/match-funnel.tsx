@@ -293,16 +293,25 @@ export function MatchFunnel({ companions }: MatchFunnelProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-3 md:min-h-[55vh] md:justify-center"
           >
             <HostLine>{matchPrompts.intro}</HostLine>
-            <button
-              type="button"
-              onClick={() => setStep("feeling")}
-              className="inline-flex items-center gap-1.5 self-start rounded-pill border border-coral/60 bg-coral/12 px-3.5 py-1.5 text-[13px] text-coral hover:border-coral hover:bg-coral/20"
-            >
-              {matchActions.start} <ArrowRight size={14} />
-            </button>
+            <div className="flex flex-col items-start gap-2.5">
+              <button
+                type="button"
+                onClick={() => setStep("feeling")}
+                className="inline-flex items-center gap-1.5 self-start rounded-pill border border-coral/60 bg-coral/12 px-3.5 py-1.5 text-[13px] text-coral hover:border-coral hover:bg-coral/20"
+              >
+                {matchActions.start} <ArrowRight size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={skip}
+                className="hidden items-center gap-1.5 self-start rounded-pill border border-line bg-copy/6 px-3.5 py-1.5 text-[13px] text-copy-muted transition hover:bg-copy/12 hover:text-copy md:inline-flex"
+              >
+                {matchActions.pickForMe}
+              </button>
+            </div>
           </motion.div>
         ) : null}
 

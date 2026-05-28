@@ -182,7 +182,7 @@ export function Gallery({ companions }: GalleryProps) {
               <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-6 sm:px-10">
                 <div className="flex flex-col gap-3 md:max-w-md">
                   <div>
-                    <p className="font-serif text-[40px] leading-[1] sm:text-[56px]">
+                    <p className="font-serif text-[40px] leading-[1] sm:text-[56px] lg:text-[72px]">
                       {active.companion.name}
                     </p>
                     <p className="mt-1.5 text-[15px] text-copy/85 sm:text-[17px]">

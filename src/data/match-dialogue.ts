@@ -60,6 +60,7 @@ export const matchDialogue = {
 
   actions: {
     start: "answer a few questions",
+    pickForMe: "or just pick someone for me",
     skip: "meet her now",
     sayHi: "say hi",
     showAnother: "choose someone else",

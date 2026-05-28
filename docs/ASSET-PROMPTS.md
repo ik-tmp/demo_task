@@ -1,12 +1,15 @@
-# Asset Prompts for Direction B
+# Asset Prompts and Inventory
 
-Generative-image prompts for **every asset the Direction B implementation needs** — cast vignettes, state variants, Create-path imagery, UI fallbacks — plus a small section of screen-mockup prompts (§D) for design preview when needed. Model-agnostic, written for natural-language image generators (the built-in tool, Imagen, Flux Pro, Midjourney v6/v7, etc.). Tags like `--ar` are intentionally omitted; aspect ratio is named in words instead.
+Generative-image prompts and current inventory for the active Casting Hall implementation. The prompts are retained for regeneration and style continuity; the required floor assets have already been generated and copied into `public/companions/`.
 
-**Existing assets to reuse.** Mira already has a generated portrait state set per `docs/IMPLEMENTATION.md` (`public/companions/mira/`). She becomes one of the four reel cast members. Her state set covers chat/funnel use; she needs *one additional* asset for her reel role (A5).
+Model-agnostic prompts are written for natural-language image generators (the built-in tool, Imagen, Flux Pro, Midjourney v6/v7, etc.). Tags like `--ar` are intentionally omitted; aspect ratio is named in words instead.
+
+**Current asset status.** Iris, Noa, Mira, and Sasha all have reel, neutral, warm, curious, closer, and final-chat assets. Create in-progress stages, create reveal templates, and shared fallbacks are also present. Mira still has a mixed legacy layout: vertical root assets, wide desktop assets, and thumbnail subdirectories.
 
 **Conventions.**
+
 - All companion portraits: adult, fully clothed, non-explicit, photoreal, cinematic editorial style.
-- **Desktop-primary, mobile-fallback.** The product is presented on desktop. Mobile is a responsive fallback derived by cropping the same source image, not a separately-generated asset. Generate **one** high-resolution 16:9 source per companion per state and let display CSS handle the mobile crop. This halves asset volume and guarantees identity match across viewports.
+- **Single wide source, responsive crop.** Generate **one** high-resolution 16:9 source per companion per state and let display CSS handle desktop and mobile crops. This halves asset volume and guarantees identity match across viewports.
 - **Compose for both crops.** Keep the face/subject roughly in the right-center portion of the 16:9 frame (not far-left, not against the right edge). Desktop uses the full frame with typography in the lower-left negative space; mobile crops right-of-center (CSS `object-position: 70% center` or similar) so the face stays framed. If you push the face all the way to one edge, the mobile crop breaks.
 - Lighting and palette are part of each companion's voice. Don't merge them.
 - All UI mockups (§D): include placeholder text only where labeled; expect to do a real pass in Figma/code afterward — AI models will hallucinate text.
@@ -15,7 +18,7 @@ Generative-image prompts for **every asset the Direction B implementation needs*
 
 ## A. Cast Vignettes (Reel Content + Funnel/Chat States)
 
-Three new companions (Iris, Noa, Sasha), each needing a primary cinematic still plus four state variants. Plus one Mira-specific reel vignette (her existing portrait states don't cover her reel premise).
+These prompts produced the current cast assets. Reuse them when regenerating higher-resolution versions or replacing any companion state.
 
 ### A1 — Iris primary (listener, reading by a window at dusk)
 
@@ -60,13 +63,14 @@ Each of A1/A2/A3 needs four state variants: **warm, curious, closer, final-chat*
 > Same character, same room, same wardrobe as reference image. Lighting is settled and warm — the "we are talking now" state. She is looking directly at the camera with relaxed, attentive eyes, a soft natural smile. Camera distance similar to the primary, perhaps slightly tighter. Subject right-of-center, lower-left typography space preserved. This is the resting state used during first chat. 16:9 aspect, high resolution, photoreal.
 
 **Save as:**
+
 - `public/companions/iris/iris-{warm,curious,closer,final-chat}.png`
 - `public/companions/noa/noa-{warm,curious,closer,final-chat}.png`
 - `public/companions/sasha/sasha-{warm,curious,closer,final-chat}.png`
 
 ### A5 — Mira's Reel-Specific Vignette (city at night)
 
-Mira's existing set covers portrait/chat states. Her reel premise per `docs/DIRECTION-B.md` §4 is "walking through a city at night, half-turned" — none of her existing files match that. Generate one additional vignette to add to her set.
+Mira's Direction A set covered portrait/chat states. Her reel premise is "walking through a city at night, half-turned", so `mira-reel.png` was generated separately.
 
 > Cinematic editorial vignette, 16:9 aspect, high resolution (target ≥2944×1656). **Use Mira's existing primary portrait as the reference image** so her identity is preserved. Mira walking along a city street at night, caught half-turned back toward the camera mid-stride. Wet pavement reflects warm neon and amber streetlights. A blurred awning, a passing taxi's tail lights, a distant figure deep in the shadow. She wears a long dark coat over her usual wardrobe; hair catches the wind. Visible energy — she knows where she is going. Cool blue-violet ambient with warm amber highlights. Subject right-of-center, quiet space in the lower-left for typography. Composition must survive a right-of-center crop to 9:19 mobile. Shot on 35mm lens, gentle motion blur on the background, sharp on her face. Cinematic, late-night, urban-intimate. Adult, fully clothed, non-explicit. Photoreal.
 
@@ -108,14 +112,14 @@ All four share: 16:9 wide aspect, high resolution, the same warm-room-at-night b
 
 Six total templates cover the common combinations of Create funnel answers. **Three reuse existing cast assets** (no new generation); **three are net new.**
 
-| # | Funnel combination | Archetype | Asset source |
-|---|---|---|---|
-| 1 | warmth + confidant + warm-apartment + night-window | Noa-like | Reuse Noa A2 |
-| 2 | nerve + challenger + sharp-city-energy | Vera-like | **New** — see below |
-| 3 | patience + mentor + older-soul + soft-studio-light | Sasha-like | Reuse Sasha A3 |
-| 4 | mischief + storyteller + warm-apartment | Playful confidant | **New** — see below |
-| 5 | honesty + companion + soft-studio-light | Gentle direct | **New** — see below |
-| 6 | calm + muse + night-window + classic-beauty | Quiet observer | Reuse Iris A1 |
+| #   | Funnel combination                                 | Archetype         | Asset source        |
+| --- | -------------------------------------------------- | ----------------- | ------------------- |
+| 1   | warmth + confidant + warm-apartment + night-window | Noa-like          | Reuse Noa A2        |
+| 2   | nerve + challenger + sharp-city-energy             | Vera-like         | **New** — see below |
+| 3   | patience + mentor + older-soul + soft-studio-light | Sasha-like        | Reuse Sasha A3      |
+| 4   | mischief + storyteller + warm-apartment            | Playful confidant | **New** — see below |
+| 5   | honesty + companion + soft-studio-light            | Gentle direct     | **New** — see below |
+| 6   | calm + muse + night-window + classic-beauty        | Quiet observer    | Reuse Iris A1       |
 
 **Template #2 — Vera-like (nerve + challenger + sharp city energy).**
 
@@ -169,17 +173,18 @@ Used when no companion is active — between the reel ending and the funnel star
 
 ## D. Screen Mockups (Key Flow Moments, for design preview)
 
-These are for design preview, not runtime assets. The image model will produce a *visual composition* — typography and chip text will need to be replaced in a design pass. The photographic portion is the high-quality bit; UI elements are blocked-out placeholders the model can render approximately.
+These are for design preview, not runtime assets. The image model will produce a _visual composition_ — typography and chip text will need to be replaced in a design pass. The photographic portion is the high-quality bit; UI elements are blocked-out placeholders the model can render approximately.
 
 ### D1 — Reel Cold-Open (desktop, 16:9)
 
-The headline screen. Full-bleed cinematic vignette with quiet typography and three text affordances. No nav, no chrome, no buttons. Desktop is the presented surface; mobile is a derived crop (see below).
+The headline screen. Full-bleed cinematic vignette with quiet typography and three text affordances. No nav, no chrome, no buttons. Generate a wide composition and let code derive the responsive mobile crop.
 
-> Desktop browser UI mockup, 16:9 wide aspect, dark elegant app interface, no browser chrome shown. The entire viewport is filled by a cinematic photoreal editorial portrait of a woman in her early thirties seated by a large window at dusk, just lifting her gaze from a book she has lowered to her lap. The subject is positioned right-of-center in the frame; the lower-left third holds quiet negative space. Soft warm-cool gradient window light. The portrait extends edge to edge — no status bar, no top chrome, no bottom nav bar. Overlaid in the lower-left third, in elegant serif editorial typography in soft warm white: the name "Iris" set large on its own line, and beneath it in a smaller sans-serif body face: "Listens before she answers." Centered toward the bottom of the screen, in a quiet sans-serif body face: a single line reading "Who do you want to start with?". Beneath that line, a row of three small text affordances separated by middle dots, all lowercase: "see everyone · pick for me · describe someone else." Above the bottom edge, a row of four small horizontal dots indicating reel progress — the second dot subtly brighter than the others. Premium, cinematic, restrained. Warm beige and slate blue palette.
+> Desktop browser UI mockup, 16:9 wide aspect, dark elegant app interface, no browser chrome shown. The entire viewport is filled by a cinematic photoreal editorial portrait of a woman in her early thirties seated by a large window at dusk, just lifting her gaze from a book she has lowered to her lap. The subject is positioned right-of-center in the frame; the lower-left third holds quiet negative space. Soft warm-cool gradient window light. The portrait extends edge to edge — no status bar, no top chrome, no bottom nav bar. Overlaid in the lower-left third, in elegant serif editorial typography in soft warm white: the name "Iris" set large on its own line, and beneath it in a smaller sans-serif body face: "Listens before she answers." Centered toward the bottom of the screen, in a quiet sans-serif body face: a single line reading "Who do you want to talk to first?". Beneath that line, a row of three small text affordances separated by middle dots, all lowercase: "show all companions · choose someone for me · describe who you want." Above the bottom edge, a row of four small horizontal dots indicating reel progress — the second dot subtly brighter than the others. Premium, cinematic, restrained. Warm beige and slate blue palette.
 
 **Mobile fallback (derived crop, not a separate generation).**
+
 - The mobile reel is the same 16:9 source image, displayed full-bleed on a 9:19 viewport with `object-fit: cover; object-position: 70% center` (or equivalent), so the right-of-center subject stays in frame.
-- Editorial typography is re-laid out in code for the narrower viewport — name and premise still lower-left of the visible mobile crop, the "Who do you want to start with?" line and three affordances stack near the bottom of the mobile viewport.
+- Editorial typography is re-laid out in code for the narrower viewport — name and premise still lower-left of the visible mobile crop, the "Who do you want to talk to first?" line and three affordances stack near the bottom of the mobile viewport.
 - Don't generate a separate 9:19 mockup; trust the CSS crop + typography re-layout.
 
 **Save as:** `design/concept-07-reel-cold-open.png`
@@ -205,88 +210,82 @@ The most generative-feeling moment in the flow.
 ## E. Production Notes
 
 **Generating consistent characters across states.**
-After A1/A2/A3 produce a primary portrait, lock the description (face, hair, clothing, room) and only change the *state* axis: lighting, posture, expression, distance from camera. Models do not preserve identity across runs unless you use a reference-image feature. **Always use image-to-image from the primary** for the four state variants (A4). Text-to-image alone will give you a different face every time and the state set will look like five different people.
+After A1/A2/A3 produce a primary portrait, lock the description (face, hair, clothing, room) and only change the _state_ axis: lighting, posture, expression, distance from camera. Models do not preserve identity across runs unless you use a reference-image feature. **Always use image-to-image from the primary** for the four state variants (A4). Text-to-image alone will give you a different face every time and the state set will look like five different people.
 
 **Generating consistent UI across screens.**
 For D1/D2/D3, lock the palette ("warm beige, slate blue, soft warm white typography"), the type style ("elegant serif display, refined sans-serif body, small caps subheadings"), and the panel treatment ("dark slate, generous whitespace, magazine density"). Generate all three screens in the same session with the same model for a designed look.
 
 **What models will get wrong (plan for cleanup):**
+
 - All small text (chip labels, suggested replies, bullet lines, name labels in mockups). Treat as placement guides only.
 - Specific UI iconography. Don't ask for icons; ask for type.
 - Aspect ratio precision — most models round to their nearest supported ratio. Crop in post if needed.
 - Composition of "blurred figure resolving" for the Match mid-flow funnel state — omitted deliberately. That one is better produced by compositing the final cast vignette (A1, etc.) under a Gaussian blur in CSS than by prompting a model to render "intentionally low-contrast and resolving."
 
-**Total new assets — punch list.**
+## F. Current Inventory
 
-Required for floor demo (Tier 1 only, Sasha sketched):
-- Iris primary + 4 variants = 5 files
-- Noa primary + 4 variants = 5 files
-- Mira reel vignette = 1 file
-- Explicit Iris and Noa reel stills = 2 files
-- = **13 files.**
+Generated with the built-in image generation tool and copied into the repo. Files are currently `1672x941` PNGs unless noted.
 
-**Generated status — Tier 1 floor demo (updated May 28, 2026).**
+### Cast Assets
 
-Generated with the built-in image generation tool and copied into the repo:
+- `public/companions/iris/iris-reel.png`
+- `public/companions/iris/iris-neutral.png`
+- `public/companions/iris/iris-warm.png`
+- `public/companions/iris/iris-curious.png`
+- `public/companions/iris/iris-closer.png`
+- `public/companions/iris/iris-final-chat.png`
+- `public/companions/noa/noa-reel.png`
+- `public/companions/noa/noa-neutral.png`
+- `public/companions/noa/noa-warm.png`
+- `public/companions/noa/noa-curious.png`
+- `public/companions/noa/noa-closer.png`
+- `public/companions/noa/noa-final-chat.png`
+- `public/companions/sasha/sasha-reel.png`
+- `public/companions/sasha/sasha-neutral.png`
+- `public/companions/sasha/sasha-warm.png`
+- `public/companions/sasha/sasha-curious.png`
+- `public/companions/sasha/sasha-closer.png`
+- `public/companions/sasha/sasha-final-chat.png`
+- `public/companions/mira/mira-reel.png`
 
-- `[x]` `public/companions/iris/iris-neutral.png`
-- `[x]` `public/companions/iris/iris-reel.png`
-- `[x]` `public/companions/iris/iris-warm.png`
-- `[x]` `public/companions/iris/iris-curious.png`
-- `[x]` `public/companions/iris/iris-closer.png`
-- `[x]` `public/companions/iris/iris-final-chat.png`
-- `[x]` `public/companions/noa/noa-neutral.png`
-- `[x]` `public/companions/noa/noa-reel.png`
-- `[x]` `public/companions/noa/noa-warm.png`
-- `[x]` `public/companions/noa/noa-curious.png`
-- `[x]` `public/companions/noa/noa-closer.png`
-- `[x]` `public/companions/noa/noa-final-chat.png`
-- `[x]` `public/companions/mira/mira-reel.png`
+### Mira Legacy Assets
 
-All generated Tier 1 files are `1672x941` PNGs. This matches the existing Mira desktop-wide set but is below the original target resolution of `>=2944x1656`; regenerate at higher resolution later if the final Direction B build needs sharper large-display or mobile-crop output. `iris-reel.png` and `noa-reel.png` are explicit reel-facing stills generated after the initial state sets so the Direction B cold-open can address every reel asset with a consistent `*-reel.png` path.
+Mira predates the single-wide-source convention and currently keeps multiple asset shapes:
 
-**Generated status — remaining Direction B assets (updated May 28, 2026).**
+- Root vertical/mobile assets: `public/companions/mira/mira-{neutral,warm,curious,closer,final-chat}.png` (`941x1672`)
+- Desktop-wide assets: `public/companions/mira/desktop/mira-{state}-desktop.png` (`1672x941`)
+- Root thumbnails: `public/companions/mira/thumbnails/mira-{state}-thumb.png` (`360x360`)
+- Desktop thumbnails: `public/companions/mira/desktop/thumbnails/mira-{state}-desktop-thumb.png` (`360x360`)
 
-Generated with the built-in image generation tool and copied into the repo, except `in-progress-4.png`, which was derived from Noa's neutral asset with a local Gaussian blur per the B1 note:
+The current loader supports Mira's mixed layout. Do not delete or flatten these files until the image loader and `src/data/companions.json` are migrated together.
 
-- `[x]` `public/companions/sasha/sasha-neutral.png`
-- `[x]` `public/companions/sasha/sasha-reel.png`
-- `[x]` `public/companions/sasha/sasha-warm.png`
-- `[x]` `public/companions/sasha/sasha-curious.png`
-- `[x]` `public/companions/sasha/sasha-closer.png`
-- `[x]` `public/companions/sasha/sasha-final-chat.png`
-- `[x]` `public/companions/create/in-progress-1.png`
-- `[x]` `public/companions/create/in-progress-2.png`
-- `[x]` `public/companions/create/in-progress-3.png`
-- `[x]` `public/companions/create/in-progress-4.png`
-- `[x]` `public/companions/create/template-2-vera.png`
-- `[x]` `public/companions/create/template-4-playful.png`
-- `[x]` `public/companions/create/template-5-gentle.png`
-- `[x]` `public/companions/_shared/portrait-blur.png`
-- `[x]` `public/companions/_shared/soft-fail.png`
-- `[x]` `public/companions/_shared/ambient-between.png`
+### Create Assets
 
-All files in this pass are `1672x941` PNGs to match the existing generated Direction B asset size.
+- `public/companions/create/in-progress-1.png`
+- `public/companions/create/in-progress-2.png`
+- `public/companions/create/in-progress-3.png`
+- `public/companions/create/in-progress-4.png`
+- `public/companions/create/template-2-vera.png`
+- `public/companions/create/template-4-playful.png`
+- `public/companions/create/template-5-gentle.png`
 
-Required for comfortable demo (everything in §A, §B, §C):
-- §A: 15 cast files (5 per companion × 3) + 1 Mira reel + 2 explicit Iris/Noa reel stills = 18 files
-- §B: 4 in-progress stages + 3 net new templates = 7 files
-- §C: 0–3 fallback files (most can be CSS-derived)
-- = **25–28 files total.**
+`in-progress-4.png` was derived locally from Noa's neutral asset with Gaussian blur, matching the B1 note.
 
-**Suggested generation order:**
-1. A1 Iris primary — single file, validates style fidelity to the doc before committing to 20+ generations.
-2. A4 Iris variants via image-to-image from A1.
-3. A2 Noa primary + A4 Noa variants.
-4. Iris/Noa explicit reel stills (`iris-reel.png`, `noa-reel.png`) if the implementation should use dedicated reel paths instead of `neutral`.
-5. A3 Sasha primary + A4 Sasha variants.
-6. A5 Mira's reel-specific vignette via image-to-image from her existing primary.
-7. B1 in-progress stages (Stage 4 derived from B2 #1 Noa, others fresh).
-8. B2 net-new templates (#2 Vera, #4 Playful, #5 Gentle).
-9. C2 / C3 fallbacks (skip C1 if CSS blur is acceptable).
-10. D1 / D2 / D3 screen mockups for design preview — only if needed; the existing `concept-07/08/09` files in `design/` already cover these per `IMPLEMENTATION.md`.
+### Shared Fallbacks
 
-**Where outputs land in the repo.**
+- `public/companions/_shared/portrait-blur.png`
+- `public/companions/_shared/soft-fail.png`
+- `public/companions/_shared/ambient-between.png`
+
+### Screen Mockups
+
+- `design/concept-07-reel-cold-open.png`
+- `design/concept-08-match-reveal.png`
+- `design/concept-09-create-reveal.png`
+
+Regenerate these only if the design changes.
+
+## G. Output Conventions
 
 The convention for **new companions** is a flat directory per companion — one file per state, no `desktop/`/`mobile/`/`thumbnails/` subdirectories, since CSS handles all crops from the single high-res source.
 
@@ -302,7 +301,7 @@ public/companions/iris/
 
 Same shape for `public/companions/noa/` and `public/companions/sasha/`.
 
-**Mira is the exception (legacy layout).** Her existing directory predates the single-source strategy:
+**Mira is the exception.** Her existing directory predates the single-source strategy:
 
 ```
 public/companions/mira/
@@ -313,18 +312,18 @@ public/companions/mira/
     └── mira-{state}-thumb.png                          ← legacy square crops (360×360)
 ```
 
-The new A5 reel vignette drops into the flat root: `public/companions/mira/mira-reel.png`.
+The A5 reel vignette lives in the flat root: `public/companions/mira/mira-reel.png`.
 
-**Mira migration to the flat layout — required as part of the Direction B rebuild, not before.**
+**Optional Mira migration to the flat layout.**
 
-Do not migrate while the current implementation is still loading from the legacy paths — you'll break the existing build for no gain (the existing build is already flagged `[~]` in `IMPLEMENTATION.md`). At rebuild time:
+Only do this as a coordinated code/data change. The current implementation loads from the legacy paths and should keep working.
 
 1. Promote each `mira/desktop/mira-{state}-desktop.png` to `mira/mira-{state}.png` (these are the 16:9 sources — they become Mira's single source per state, replacing the legacy mobile-portrait files of the same name).
 2. Delete the legacy `desktop/` subdirectory.
 3. Delete the `thumbnails/` subdirectory (CSS handles thumbnail crops from the single source).
 4. Verify `mira-reel.png` from A5 is in place.
 
-After migration, Mira's directory matches Iris/Noa/Sasha exactly:
+After migration, Mira's directory would match Iris/Noa/Sasha:
 
 ```
 public/companions/mira/
@@ -342,8 +341,8 @@ public/companions/mira/
 - **B — regenerate Mira at high resolution.** Use image-to-image from her existing primary and generate each state at ≥2944×1656. Best quality, ~5 generations of work. Recommended.
 - **C — keep the dual structure.** Cancel the migration, leave Mira's legacy directory alone, and write image-loading code that handles both flat (new companions) and dual (Mira) layouts. Cheap but adds branching to the loader and makes the asset story confusing for future contributors. Not recommended.
 
-**Everything else that gets generated.**
+**Everything else.**
 
-- Create assets: `public/companions/create/{in-progress-1..4,template-2-vera,template-4-playful,template-5-gentle}.png` — flat directory, no subdirs.
-- Shared fallbacks: `public/companions/_shared/{portrait-blur,soft-fail,ambient-between}.png` — only generate the ones you actually need (most are CSS-derivable).
-- Screen mockups: `design/concept-07-reel-cold-open.png`, `concept-08-match-reveal.png`, `concept-09-create-reveal.png` (already exist per `IMPLEMENTATION.md` — regenerate only if the design changes).
+- Create assets: `public/companions/create/{in-progress-1..4,template-2-vera,template-4-playful,template-5-gentle}.png`
+- Shared fallbacks: `public/companions/_shared/{portrait-blur,soft-fail,ambient-between}.png`
+- Screen mockups: `design/concept-07-reel-cold-open.png`, `concept-08-match-reveal.png`, `concept-09-create-reveal.png`

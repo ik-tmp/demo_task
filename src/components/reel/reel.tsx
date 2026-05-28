@@ -130,10 +130,10 @@ export function Reel({ companions }: ReelProps) {
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.45, ease: "easeOut" }}
                 >
-                  <h1 className="font-serif text-[42px] leading-[1] tracking-[-0.02em] sm:text-[64px]">
+                  <h1 className="font-serif text-[42px] leading-[1] tracking-[-0.02em] sm:text-[64px] lg:text-[72px]">
                     {current.name}
                   </h1>
-                  <p className="mt-2 max-w-md text-[15px] text-copy/80 sm:text-[17px]">
+                  <p className="mt-2 max-w-md text-[15px] text-copy/80 sm:text-[17px] md:text-[18px] md:text-copy/90">
                     {current.premise}
                   </p>
                 </motion.div>
@@ -169,7 +169,7 @@ type AffordancesProps = {
 
 function Affordances({ onSeeEveryone, onPickForMe, onDescribe }: AffordancesProps) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1.5 text-[14px] sm:text-[15px]">
+    <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1.5 text-[14px] sm:text-[15px] md:gap-3">
       <AffordanceButton onClick={onSeeEveryone} label={reelCopy.actions.seeEveryone} />
       <Sep />
       <AffordanceButton onClick={onPickForMe} label={reelCopy.actions.pickForMe} />
@@ -183,7 +183,7 @@ function Affordances({ onSeeEveryone, onPickForMe, onDescribe }: AffordancesProp
 }
 
 function Sep() {
-  return <span className="px-1 text-copy/30" aria-hidden>·</span>;
+  return <span className="px-1 text-copy/30 md:hidden" aria-hidden>·</span>;
 }
 
 function AffordanceButton({ onClick, label }: { onClick: () => void; label: string }) {
@@ -193,6 +193,8 @@ function AffordanceButton({ onClick, label }: { onClick: () => void; label: stri
       onClick={onClick}
       className={cn(
         "rounded-pill px-2 py-1 text-copy/85 transition hover:text-copy",
+        // Desktop: read as real buttons, legible over any portrait highlight.
+        "md:border md:border-line/70 md:bg-ink/45 md:px-4 md:py-2.5 md:text-copy md:shadow-soft md:backdrop-blur md:hover:border-line md:hover:bg-ink/65",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 focus-visible:ring-offset-ink",
       )}
     >
