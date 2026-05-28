@@ -344,7 +344,7 @@ function LockedTile({
           alt=""
           fill
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-          className="h-full w-full scale-[1.02] object-cover opacity-65 blur-[1.5px] saturate-[0.78] transition duration-500 group-hover:scale-[1.05] group-hover:opacity-75"
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
         />
       ) : null}
       <span
@@ -352,23 +352,23 @@ function LockedTile({
         className="pointer-events-none absolute inset-0"
         style={{
           background: asset
-            ? `radial-gradient(95% 90% at 76% 20%, ${accent}22, transparent 58%), linear-gradient(180deg, rgba(15,13,22,0.2) 0%, rgba(15,13,22,0.35) 42%, rgba(15,13,22,0.92) 100%)`
+            ? `radial-gradient(95% 90% at 76% 20%, ${accent}20, transparent 58%), linear-gradient(180deg, rgba(15,13,22,0.08) 0%, rgba(15,13,22,0.14) 42%, rgba(15,13,22,0.82) 100%)`
             : `radial-gradient(110% 120% at 75% 15%, ${accent}33, transparent 60%), linear-gradient(180deg, #211d2b 0%, #0e0c14 100%)`,
         }}
       />
       <div className="relative z-10 flex items-center justify-between">
-        <span className="grid h-9 w-9 place-items-center rounded-full bg-ink/55 text-copy-muted backdrop-blur">
+        <span className="grid h-9 w-9 place-items-center rounded-full bg-ink/55 text-copy backdrop-blur">
           <Lock size={15} />
         </span>
-        <span className="rounded-pill border border-line/60 bg-ink/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-copy-faint backdrop-blur">
+        <span className="rounded-pill border border-line/70 bg-ink/55 px-2 py-0.5 text-[10px] uppercase tracking-wide text-copy backdrop-blur">
           {galleryCopy.lockedTile.badge}
         </span>
       </div>
       <span className="relative z-10">
-        <span className="block font-serif text-[22px] leading-tight text-copy/90 blur-[1.5px]">
+        <span className="block font-serif text-[22px] leading-tight text-copy">
           {name}
         </span>
-        <span className="mt-1 block text-[12px] text-copy-muted">{vibe}</span>
+        <span className="mt-1 block text-[12px] text-copy/80">{vibe}</span>
       </span>
     </button>
   );

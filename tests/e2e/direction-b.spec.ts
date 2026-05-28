@@ -136,6 +136,8 @@ test.describe("Direction B — M4 Browse", () => {
     });
     await page.waitForTimeout(250);
     await expect(page.getByRole("link", { name: /create your own/i })).toBeVisible();
+    await expect(page.getByText(/premium/i).first()).toBeVisible();
+    await expect(page.getByText(/^soon$/i)).toHaveCount(0);
     await snapshot(page, info, "b-07c-gallery-bottom");
   });
 

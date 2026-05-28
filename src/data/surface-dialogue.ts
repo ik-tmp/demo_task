@@ -61,7 +61,7 @@ export const surfaceDialogue = {
       hint: "Describe anyone. We'll build them.",
     },
     lockedTile: {
-      badge: "soon",
+      badge: "premium",
       cta: "Unlock the full cast",
       lockedAria: (name: string) => `${name} — locked, unlock the full cast`,
     },
